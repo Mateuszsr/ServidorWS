@@ -20,6 +20,7 @@ SERVER_SECRET = os.environ.get("SERVER_SECRET", "mude-isso-para-algo-secreto-seu
 # Adicione o machine_id de cada usuário aqui
 # Para adicionar: rode o app, copie o ID que aparece na tela, cole aqui
 AUTHORIZED_MACHINES = {
+    "6a7cd3aeee2e54138155e2b0": "MEU PC"
     # "MACHINE_ID_AQUI": "Nome do usuário",
     # Exemplo:
     # "A1B2C3D4E5F6G7H8I9J0K1L2": "Meu PC",
