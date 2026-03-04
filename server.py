@@ -63,18 +63,13 @@ MEMORY_CONFIG = {
 }
 
 def encrypt_config(data: dict, machine_id: str) -> str:
-    """
-    Criptografa o config usando XOR com chave derivada de
-    SERVER_SECRET + machine_id — só funciona para aquela máquina.
-    """
+    """Criptografa o config usando XOR com chave derivada de SERVER_SECRET + machine_id."""
     payload = json.dumps(data).encode()
-    # chave derivada: HMAC-SHA256(server_secret, machine_id)
     key = hmac.new(
         SERVER_SECRET.encode(),
-        machine_id.encode(),
+        machine_id.upper().encode(),
         hashlib.sha256
     ).digest()
-    # XOR circular
     encrypted = bytes(b ^ key[i % len(key)] for i, b in enumerate(payload))
     return base64.b64encode(encrypted).decode()
 
