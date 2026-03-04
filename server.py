@@ -14,7 +14,7 @@ app = Flask(__name__)
 
 # ── Chave secreta do servidor (mude para algo aleatório seu) ──
 # No Render, defina como variável de ambiente: SERVER_SECRET
-SERVER_SECRET = os.environ.get("SERVER_SECRET", "mude-isso-para-algo-secreto-seu-2024")
+SERVER_SECRET = os.environ.get("SERVER_SECRET", "xK9#mP2$wQ7!nL4")
 
 # ── Lista de máquinas autorizadas ──
 # Adicione o machine_id de cada usuário aqui
