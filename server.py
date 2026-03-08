@@ -16,6 +16,11 @@ app = Flask(__name__)
 # No Render, defina como variável de ambiente: SERVER_SECRET
 SERVER_SECRET = os.environ.get("SERVER_SECRET", "xK9#mP2$wQ7!nL4")
 
+# ── Versão atual do app (atualize aqui a cada nova versão) ──
+LATEST_VERSION = "1.0.0"
+# URL publica do arquivo .py mais recente (ex: GitHub raw, Google Drive, etc)
+APP_DOWNLOAD_URL = os.environ.get("APP_DOWNLOAD_URL", "")
+
 # ── Lista de máquinas autorizadas ──
 # Adicione o machine_id de cada usuário aqui
 # Para adicionar: rode o app, copie o ID que aparece na tela, cole aqui
@@ -105,10 +110,12 @@ def auth():
         sig       = sign_response(encrypted, machine_id)
 
         return jsonify({
-            "ok":      True,
-            "user":    AUTHORIZED_MACHINES[machine_id],
-            "payload": encrypted,
-            "sig":     sig,
+            "ok":             True,
+            "user":           AUTHORIZED_MACHINES[machine_id],
+            "payload":        encrypted,
+            "sig":            sig,
+            "latest_version": LATEST_VERSION,
+            "update_url":     APP_DOWNLOAD_URL,
         })
 
     except Exception as e:
@@ -118,6 +125,14 @@ def auth():
 @app.route("/ping", methods=["GET"])
 def ping():
     return jsonify({"status": "online"})
+
+
+@app.route("/version", methods=["GET"])
+def version():
+    return jsonify({
+        "latest_version": LATEST_VERSION,
+        "update_url":     APP_DOWNLOAD_URL,
+    })
 
 
 if __name__ == "__main__":
