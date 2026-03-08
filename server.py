@@ -17,7 +17,7 @@ app = Flask(__name__)
 SERVER_SECRET = os.environ.get("SERVER_SECRET", "xK9#mP2$wQ7!nL4")
 
 # ── Versão atual do app (atualize aqui a cada nova versão) ──
-LATEST_VERSION = "1.0.0"
+LATEST_VERSION = "1.0.1"
 # URL publica do arquivo .py mais recente (ex: GitHub raw, Google Drive, etc)
 APP_DOWNLOAD_URL = os.environ.get("APP_DOWNLOAD_URL", "https://github.com/Mateuszsr/ServidorWS/raw/main/ArinarTracker.exe")
 
