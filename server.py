@@ -17,10 +17,10 @@ app = Flask(__name__)
 SERVER_SECRET = os.environ.get("SERVER_SECRET", "xK9#mP2$wQ7!nL4")
 
 # ── Versão atual do app (atualize aqui a cada nova versão) ──
-LATEST_VERSION = "1.0.1"
-MIN_VERSION    = "1.0.1"
+LATEST_VERSION = "1.0.0"
+MIN_VERSION    = "1.0.0"  # versoes abaixo disso sao bloqueadas
 # URL publica do arquivo .py mais recente (ex: GitHub raw, Google Drive, etc)
-APP_DOWNLOAD_URL = os.environ.get("APP_DOWNLOAD_URL", "https://github.com/Mateuszsr/ServidorWS/raw/main/ArinarTracker.exe")
+APP_DOWNLOAD_URL = os.environ.get("APP_DOWNLOAD_URL", "")
 
 # ── Lista de máquinas autorizadas ──
 # Adicione o machine_id de cada usuário aqui
@@ -104,6 +104,16 @@ def auth():
             return jsonify({
                 "ok":  False,
                 "msg": f"Máquina não autorizada.\nSeu ID: {machine_id}"
+            }), 403
+
+        # Bloqueia versoes abaixo da minima
+        def ver_tuple(v):
+            try: return tuple(int(x) for x in v.split("."))
+            except: return (0,)
+        if ver_tuple(version) < ver_tuple(MIN_VERSION):
+            return jsonify({
+                "ok":  False,
+                "msg": f"Versão {version} desatualizada.\nBaixe a versão mais recente pelo launcher."
             }), 403
 
         # Encripta config para aquela máquina específica
