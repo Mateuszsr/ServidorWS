@@ -17,8 +17,8 @@ app = Flask(__name__)
 SERVER_SECRET = os.environ.get("SERVER_SECRET", "xK9#mP2$wQ7!nL4")
 
 # ── Versão atual do app (atualize aqui a cada nova versão) ──
-LATEST_VERSION = "1.0.0"
-MIN_VERSION    = "1.0.0"  # versoes abaixo disso sao bloqueadas
+LATEST_VERSION = "1.0.1"
+MIN_VERSION    = "1.0.1"  # versoes abaixo disso sao bloqueadas
 # URL publica do arquivo .py mais recente (ex: GitHub raw, Google Drive, etc)
 APP_DOWNLOAD_URL = os.environ.get("APP_DOWNLOAD_URL", "")
 
