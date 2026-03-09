@@ -20,6 +20,7 @@ SERVER_SECRET = os.environ.get("SERVER_SECRET", "xK9#mP2$wQ7!nL4")
 LATEST_VERSION = "1.0.1"
 MIN_VERSION    = "1.0.1"  # versoes abaixo disso sao bloqueadas
 # URL publica do arquivo .py mais recente (ex: GitHub raw, Google Drive, etc)
+#https://github.com/Mateuszsr/ServidorWS/raw/refs/heads/main/ArinarTracker.exe
 APP_DOWNLOAD_URL = os.environ.get("APP_DOWNLOAD_URL", "")
 
 # ── Lista de máquinas autorizadas ──
