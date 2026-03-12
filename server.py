@@ -40,7 +40,7 @@ AUTHORIZED_MACHINES = {
 
 # ── Endereços de memória (ficam APENAS no servidor) ──
 MEMORY_CONFIG = {
-    "STATIC_SYSTEM_INSTANCE": 0x00D3D82C,
+    "STATIC_SYSTEM_INSTANCE": 0x00D4D8AC,
     "OFF_GAMEMANAGER":        0x14,
     "OFF_TREE_HEADER":        0x3C,
     "OFF_PLAYER_OBJ":         0x40,
