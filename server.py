@@ -66,12 +66,16 @@ MEMORY_CONFIG = {
     "OFF_VP_TOP":             0x78,
     "OFF_VP_RIGHT":           0x7A,
     "OFF_VP_BOTTOM":          0x7C,
-    "HOOK_ADDR":              0x0062EC6A,
-    "HOOK_SIZE":              7,
-    "QUEUE_SLOTS":            512,
-    "DAMAGE_STATIC_OFFSET":   0x00345244,
-    "DAMAGE_VALUE_OFF":       0x04,
-    "DAMAGE_ID_OFF":          0x08,
+    # Fila nativa de dano (sem hook)
+    "DAMAGE_STATIC_OFFSET":   0x94D8AC,   # warspear_base + offset = ptr global
+    "DAMAGE_OFF_BASE_ARENA":  0x14,       # [global+0x14] = base_arena
+    "DAMAGE_OFF_PLAYER":      0x1550,     # base_arena + 0x1550 = player_obj
+    "DAMAGE_OFF_QUEUE_PTR":   0x28,       # [player+0x28] = ponteiro do array
+    "DAMAGE_OFF_WRITE_IDX":   0x08,       # [player+0x08] = write_idx
+    "DAMAGE_SLOT_SIZE":       0x44,       # bytes por slot
+    "DAMAGE_VALUE_OFF":       0x00,       # slot+0x00 = dano
+    "DAMAGE_ID_OFF":          0x04,       # slot+0x04 = att_id
+    "DAMAGE_TARGET_OFF":      0x08,       # slot+0x08 = target_id
 }
 
 def encrypt_config(data: dict, machine_id: str) -> str:
