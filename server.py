@@ -24,11 +24,11 @@ APP_DOWNLOAD_URL = os.environ.get("APP_DOWNLOAD_URL", "")
 # ── Lista de máquinas autorizadas ──
 AUTHORIZED_MACHINES = {
     "6A7CD3AEEE2E54138155E2B0": "MEU PC",
-    "11D188FF67AB7D22E2FCE705": "BIA (Miguel)",
+    #"11D188FF67AB7D22E2FCE705": "BIA (Miguel)",
     "C7522236B60EBA94D3A8E4D0": "Miguel",
     #"AF71B8155321808DAAD1B956": "Datenshi",
-    "030B45B72576EF9327E48E35": "Sonno",
-    "9E07DC15033572B81CC9DBE0": "NSei",
+    #"030B45B72576EF9327E48E35": "Sonno",
+    #"9E07DC15033572B81CC9DBE0": "NSei",
 }
 
 # ── Endereços de memória + tabela de guilds (ficam APENAS no servidor) ──
