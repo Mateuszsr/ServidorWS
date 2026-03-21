@@ -37,7 +37,7 @@ MEMORY_CONFIG = {
     "OFF_GAMEMANAGER":        0x14,
     "OFF_TREE_HEADER":        0x3C,
     "OFF_PLAYER_OBJ":         0x40,
-    "OFF_CAMERA":             1145 * 4,
+    "OFF_CAMERA":             0x124C,
     "OFF_NODE_LEFT":          0x04,
     "OFF_NODE_RIGHT":         0x08,
     "OFF_NODE_ID":            0x10,
