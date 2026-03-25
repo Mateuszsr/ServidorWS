@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔ Arinar War Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg-void:    #07090f;
+    --bg-panel:   #0b0f1c;
+    --bg-card:    #0f1525;
+    --bg-hover:   #182035;
+    --border:     #1b2a44;
+    --border2:    #0e1828;
+    --gold:       #f5c842;
+    --gold-dim:   #2e2208;
+    --gold2:      #c8960c;
+    --sent:       #00e5a0;
+    --sent-dim:   #003d2a;
+    --legion:     #ff6a2a;
+    --legion-dim: #3d1a08;
+    --text:       #ccd8f0;
+    --text-dim:   #2e4060;
+    --text-mid:   #5577aa;
+    --accent:     #e03050;
+    --accent2:    #ff4060;
+    --crit:       #ffdd44;
+    --gxg-ally:   #4fa3e0;
+    --gxg-enemy:  #e04f6a;
+    --boss-bar:   #9b59b6;
+    --focus:      #ffaa00;
+    --pve-top:    #ff6b35;
+    --buff-hi:    #3dd68c;
+    --buff-lo:    #e05050;
+    --buff-fero:  #ff9944;
+    --buff-resi:  #44aaff;
+    --guild-col:  #a78bfa;
+    --p1:         #ff4444;
+    --p2:         #ffaa00;
+    --p3:         #44aaff;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg-void); color:var(--text); font-family:'Rajdhani',sans-serif; font-size:14px; min-height:100vh; overflow-x:hidden; }
+
+  /* ── HEADER ── */
+  .header { background:var(--bg-panel); border-bottom:1px solid var(--gold2); padding:8px 16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+  .header-title { font-family:'Orbitron',sans-serif; font-size:14px; font-weight:900; color:var(--gold); letter-spacing:2px; display:flex; align-items:center; gap:6px; }
+  .header-title span { color:var(--text-mid); font-weight:400; font-size:12px; }
+  .header-right { margin-left:auto; display:flex; align-items:center; gap:14px; font-size:12px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 6px var(--accent2); display:inline-block; animation:blink 1.5s infinite; }
+  .status-dot.online { background:var(--sent); box-shadow:0 0 6px var(--sent); animation:none; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* ── TABS ── */
+  .tab-nav { background:var(--bg-panel); display:flex; border-bottom:1px solid var(--border); padding:0 16px; }
+  .tab-btn { padding:10px 20px; font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; letter-spacing:1px; color:var(--text-dim); cursor:pointer; border:none; background:none; border-bottom:2px solid transparent; transition:all .2s; display:flex; align-items:center; gap:7px; }
+  .tab-btn:hover { color:var(--text-mid); }
+  .tab-btn.active-war   { color:var(--accent2);   border-bottom-color:var(--accent2); }
+  .tab-btn.active-gxg   { color:var(--gxg-ally);  border-bottom-color:var(--gxg-ally); }
+  .tab-btn.active-pve   { color:var(--boss-bar);   border-bottom-color:var(--boss-bar); }
+  .tab-btn.active-guild { color:var(--guild-col);  border-bottom-color:var(--guild-col); }
+  .tab-badge { background:var(--bg-card); padding:1px 6px; border-radius:4px; font-size:10px; font-family:'Share Tech Mono',monospace; }
+
+  /* ── PAGES ── */
+  .page { display:none; padding:12px 16px; }
+  .page.active { display:block; animation:fadeIn .2s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── ACTION BAR (save + reset) ── */
+  .action-bar { display:flex; gap:6px; justify-content:flex-end; margin-bottom:8px; }
+  .action-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-mid); padding:4px 12px; border-radius:3px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:600; transition:all .15s; display:flex; align-items:center; gap:5px; }
+  .action-btn:hover { color:var(--gold); border-color:var(--gold2); background:var(--bg-hover); }
+  .action-btn.danger:hover { color:var(--accent2); border-color:var(--accent); }
+  .action-btn.saved { color:var(--sent); border-color:var(--sent); }
+
+  /* ── GxG SUBNAV ── */
+  .gxg-subnav { display:flex; background:var(--bg-void); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:12px; }
+  .gxg-subbtn { flex:1; padding:9px 0; font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:.5px; color:var(--text-dim); cursor:pointer; border:none; background:none; border-bottom:2px solid transparent; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .gxg-subbtn:hover { color:var(--text-mid); background:var(--bg-card); }
+  .gxg-subbtn.active      { color:var(--gxg-ally); background:var(--bg-card); border-bottom-color:var(--gxg-ally); }
+  .gxg-subbtn.active-buff { color:var(--buff-hi);  background:var(--bg-card); border-bottom-color:var(--buff-hi); }
+  .gxg-subbtn.active-hp   { color:var(--accent2);  background:var(--bg-card); border-bottom-color:var(--accent2); }
+
+  /* ── GUILD PILLS ── */
+  .guild-filter-bar { display:flex; align-items:center; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+  .guild-filter-label { font-size:10px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; white-space:nowrap; }
+  .guild-filter-pills { display:flex; gap:4px; flex-wrap:wrap; }
+  .guild-pill { padding:3px 11px; border-radius:20px; font-size:11px; font-family:'Rajdhani',sans-serif; font-weight:600; cursor:pointer; border:1px solid var(--border); color:var(--text-dim); background:var(--bg-card); transition:all .15s; }
+  .guild-pill:hover { color:var(--text); border-color:var(--text-mid); }
+  .guild-pill.active { color:#000; background:var(--gxg-ally); border-color:var(--gxg-ally); }
+  .guild-pill.geral-pill.active { background:var(--gold); border-color:var(--gold2); color:#000; }
+
+  /* ── GUILD SELECTOR ── */
+  .guild-selector { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .guild-sel-group { display:flex; align-items:center; gap:6px; background:var(--bg-card); border:1px solid var(--border); border-radius:4px; padding:4px 10px; font-size:12px; }
+  .guild-sel-group label { color:var(--text-mid); font-size:11px; }
+  .guild-sel-group select { background:var(--bg-hover); color:var(--text); border:1px solid var(--border); border-radius:3px; padding:2px 6px; font-family:'Rajdhani',sans-serif; font-size:12px; outline:none; }
+  .guild-dot-ally  { width:8px; height:8px; border-radius:50%; background:var(--gxg-ally); }
+  .guild-dot-enemy { width:8px; height:8px; border-radius:50%; background:var(--gxg-enemy); }
+
+  /* ── TUG BAR ── */
+  .tug-bar-wrapper { margin-bottom:12px; }
+  .tug-bar-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px; font-family:'Share Tech Mono',monospace; }
+  .tug-label-left  { color:var(--sent);   font-weight:700; }
+  .tug-label-right { color:var(--legion); font-weight:700; text-align:right; }
+  .tug-center-pct  { font-family:'Orbitron',sans-serif; font-size:10px; color:var(--text-mid); }
+  .tug-bar { width:100%; height:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:3px; overflow:hidden; position:relative; display:flex; }
+  .tug-sent  { height:100%; background:linear-gradient(90deg,var(--sent-dim),var(--sent)); transition:width .6s cubic-bezier(.4,0,.2,1); display:flex; align-items:center; padding-left:6px; font-size:11px; font-family:'Orbitron',sans-serif; font-weight:700; color:#000; min-width:30px; }
+  .tug-legion { height:100%; background:linear-gradient(90deg,var(--legion),var(--legion-dim)); flex:1; display:flex; align-items:center; justify-content:flex-end; padding-right:6px; font-size:11px; font-family:'Orbitron',sans-serif; font-weight:700; color:#000; }
+  .tug-divider { position:absolute; left:50%; top:0; bottom:0; width:2px; background:var(--gold); box-shadow:0 0 8px var(--gold); transform:translateX(-50%); }
+  .tug-ally  { background:linear-gradient(90deg,#0e2a44,var(--gxg-ally)) !important; }
+  .tug-enemy { background:linear-gradient(90deg,var(--gxg-enemy),#440e1a) !important; }
+
+  /* ── FACTION PANELS ── */
+  .fac-panels { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .fac-panel { background:var(--bg-card); border-radius:4px; overflow:hidden; }
+  .fac-panel-sent { border:1px solid var(--sent); }
+  .fac-panel-leg  { border:1px solid var(--legion); }
+  .fac-top-bar { height:2px; }
+  .fac-top-bar-sent { background:var(--sent); }
+  .fac-top-bar-leg  { background:var(--legion); }
+  .fac-header { display:flex; align-items:center; justify-content:space-between; padding:5px 10px; font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; }
+  .fac-count { font-size:22px; font-family:'Orbitron',sans-serif; font-weight:900; padding:2px 10px 6px; }
+  .fac-count-sent { color:var(--sent); }
+  .fac-count-leg  { color:var(--legion); }
+  .fac-classes { padding:0 8px 6px; display:grid; grid-template-columns:1fr 1fr; gap:2px; }
+  .class-row { display:flex; align-items:center; gap:5px; font-size:11px; padding:2px 4px; border-radius:2px; }
+  .class-icon { font-family:'Share Tech Mono',monospace; font-size:10px; width:20px; text-align:center; background:var(--bg-hover); padding:1px 2px; border-radius:2px; }
+  .class-cnt { margin-left:auto; font-weight:700; font-family:'Share Tech Mono',monospace; font-size:10px; }
+
+  /* ── RANK SECTION ── */
+  .rank-section { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .rank-header { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); }
+  .rank-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .sub-tabs { display:flex; gap:4px; }
+  .sub-tab { font-size:10px; font-family:'Orbitron',sans-serif; padding:2px 8px; border-radius:2px; cursor:pointer; color:var(--text-dim); background:var(--bg-void); border:1px solid var(--border2); transition:all .15s; }
+  .sub-tab:hover { color:var(--text-mid); }
+  .sub-tab.active { color:var(--gold); background:var(--gold-dim); border-color:var(--gold2); }
+
+  /* ── RANK ROWS ── */
+  .rank-row { display:flex; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border2); gap:8px; transition:background .1s; position:relative; overflow:hidden; }
+  .rank-row:last-child { border-bottom:none; }
+  .rank-row:hover { background:var(--bg-hover); }
+  .rank-row.rank-you { background:rgba(245,200,66,.06); border-left:2px solid var(--gold); }
+  .rank-bar-bg { position:absolute; left:0;top:0;bottom:0; pointer-events:none; opacity:.12; }
+  .rank-bar    { position:absolute; left:0;bottom:0; height:2px; transition:width .4s; opacity:.6; }
+  .rank-num { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; width:18px; text-align:center; color:var(--text-dim); flex-shrink:0; }
+  .rank-num.first  { color:var(--gold); }
+  .rank-num.second { color:#a8b4c8; }
+  .rank-num.third  { color:#c8845a; }
+  .rank-avatar { width:26px;height:26px;border-radius:3px;background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;border:1px solid var(--border); }
+  .rank-info { flex:1;min-width:0; }
+  .rank-name { font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .rank-sub  { font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace; }
+  .rank-val  { font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;text-align:right;flex-shrink:0; }
+  .rank-dps  { font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace;text-align:right; }
+  .rank-list { max-height:320px;overflow-y:auto; }
+  .rank-list::-webkit-scrollbar { width:4px; }
+  .rank-list::-webkit-scrollbar-track { background:var(--bg-void); }
+  .rank-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+
+  /* ── BUFF SECTION ── */
+  .buff-section { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .buff-header  { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); }
+  .buff-title   { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .buff-spotlight { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 12px; border-bottom:1px solid var(--border2); }
+  .buff-spot-card { background:var(--bg-panel); border-radius:4px; padding:8px 10px; position:relative; overflow:hidden; }
+  .buff-spot-card::before { content:''; position:absolute;top:0;left:0;right:0;height:2px; }
+  .buff-spot-most::before  { background:var(--buff-hi); }
+  .buff-spot-least::before { background:var(--buff-lo); }
+  .buff-spot-label { font-family:'Orbitron',sans-serif;font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px; }
+  .buff-spot-name  { font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .buff-spot-class { font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace;margin-top:1px; }
+  .buff-spot-count { font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;margin-top:4px; }
+  .buff-row { display:flex; align-items:center; padding:5px 12px; border-bottom:1px solid var(--border2); gap:8px; position:relative; overflow:hidden; transition:background .1s; }
+  .buff-row:last-child { border-bottom:none; }
+  .buff-row:hover { background:var(--bg-hover); }
+  .buff-count-num { font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;width:30px;text-align:center;flex-shrink:0; }
+  .buff-badges { display:flex;gap:3px;flex-shrink:0; }
+  .buff-badge { font-size:9px;padding:1px 5px;border-radius:2px;font-family:'Share Tech Mono',monospace;font-weight:700; }
+  .buff-badge-fero { background:rgba(255,153,68,.2);color:var(--buff-fero);border:1px solid var(--buff-fero); }
+  .buff-badge-resi { background:rgba(68,170,255,.2);color:var(--buff-resi);border:1px solid var(--buff-resi); }
+  .buff-list { max-height:280px;overflow-y:auto; }
+  .buff-list::-webkit-scrollbar { width:4px; }
+  .buff-list::-webkit-scrollbar-track { background:var(--bg-void); }
+  .buff-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+
+  /* ── PVE ── */
+  .boss-section { background:var(--bg-card);border:1px solid var(--boss-bar);border-radius:4px;padding:10px 14px;margin-bottom:10px;position:relative;overflow:hidden; }
+  .boss-section::before { content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--boss-bar),transparent); }
+  .boss-name-row { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+  .boss-name { font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--boss-bar);display:flex;align-items:center;gap:7px; }
+  .boss-hp-text { font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-mid); }
+  .boss-bar-track { width:100%;height:10px;background:var(--bg-void);border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-bottom:8px; }
+  .boss-bar-fill  { height:100%;background:linear-gradient(90deg,#5e1a7a,var(--boss-bar));border-radius:2px;transition:width .5s ease; }
+  .boss-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:8px; }
+  .boss-stat { background:var(--bg-panel);border:1px solid var(--border);border-radius:3px;padding:5px 8px;text-align:center; }
+  .boss-stat-val { font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700; }
+  .boss-stat-lbl { font-size:9px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;margin-top:1px; }
+  .spotlight-row { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px; }
+  .spotlight-card { background:var(--bg-card);border-radius:4px;padding:10px 12px;position:relative;overflow:hidden; }
+  .spotlight-card::before { content:'';position:absolute;top:0;left:0;right:0;height:2px; }
+  .spotlight-topDmg::before  { background:var(--pve-top); }
+  .spotlight-focused::before { background:var(--accent2); }
+  .spotlight-card-label { font-family:'Orbitron',sans-serif;font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:5px; }
+  .spotlight-player-name { font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .spotlight-class { font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace;margin-top:2px; }
+  .spotlight-value { font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;margin-top:6px; }
+  .focused-badge { background:var(--accent);color:white;font-size:9px;font-family:'Orbitron',sans-serif;padding:1px 5px;border-radius:2px;margin-left:5px;animation:blink 1.2s infinite; }
+
+  /* ── GUILD TAB ── */
+  .guild-rank-section { background:var(--bg-card); border:1px solid var(--guild-col); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .guild-rank-header  { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); }
+  .guild-rank-title   { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--guild-col); display:flex; align-items:center; gap:6px; }
+
+  .guild-card { display:flex; align-items:center; padding:8px 12px; border-bottom:1px solid var(--border2); gap:10px; cursor:pointer; transition:background .1s; position:relative; overflow:hidden; }
+  .guild-card:last-child { border-bottom:none; }
+  .guild-card:hover { background:var(--bg-hover); }
+  .guild-card.active-guild-card { background:rgba(167,139,250,.07); border-left:2px solid var(--guild-col); }
+  .guild-card-bar { position:absolute; left:0;top:0;bottom:0; pointer-events:none; opacity:.1; background:var(--guild-col); }
+  .guild-card-rank { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:900; color:var(--guild-col); width:22px; text-align:center; flex-shrink:0; pointer-events:none; }
+  .guild-card-name { font-size:15px; font-weight:700; color:var(--text); flex:1; pointer-events:none; }
+  .guild-card-fac  { display:flex; gap:6px; font-family:'Share Tech Mono',monospace; font-size:10px; pointer-events:none; }
+  .guild-card-count { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:900; color:var(--guild-col); width:30px; text-align:right; flex-shrink:0; pointer-events:none; }
+  .guild-card > * { pointer-events:none; }
+  .guild-list { max-height:300px; overflow-y:auto; }
+  .guild-list::-webkit-scrollbar { width:4px; }
+  .guild-list::-webkit-scrollbar-track { background:var(--bg-void); }
+  .guild-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+
+  /* ── GUILD PLAYERS PANEL ── */
+  .guild-players-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; }
+  .guild-players-header { padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .guild-players-title  { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--guild-col); }
+  .guild-player-row { display:flex; align-items:center; gap:8px; padding:5px 12px; border-bottom:1px solid var(--border2); }
+  .guild-player-row:last-child { border-bottom:none; }
+  .guild-player-cls { width:26px;height:26px;border-radius:3px;background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;border:1px solid var(--border); }
+  .guild-player-name { flex:1; font-size:13px; font-weight:600; }
+  .guild-player-cls-name { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .guild-players-list { max-height:240px; overflow-y:auto; }
+  .guild-players-list::-webkit-scrollbar { width:4px; }
+  .guild-players-list::-webkit-scrollbar-track { background:var(--bg-void); }
+  .guild-players-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+
+  /* ── HP PRIORITY (GxG) ── */
+  .hp-view { }
+  .prio-selector { display:flex; gap:6px; margin-bottom:10px; }
+  .prio-btn { flex:1; padding:8px 0; border-radius:4px; font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:.5px; cursor:pointer; border:1px solid var(--border); background:var(--bg-card); color:var(--text-dim); transition:all .15s; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .prio-btn:hover { background:var(--bg-hover); }
+  .prio-btn.active-p1 { color:var(--p1); border-color:var(--p1); background:rgba(255,68,68,.08); }
+  .prio-btn.active-p2 { color:var(--p2); border-color:var(--p2); background:rgba(255,170,0,.08); }
+  .prio-btn.active-p3 { color:var(--p3); border-color:var(--p3); background:rgba(68,170,255,.08); }
+
+  .class-picker-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .class-picker-header { padding:6px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .class-picker-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; padding:8px 10px; }
+  .class-toggle { padding:5px 4px; border-radius:3px; border:1px solid var(--border2); background:var(--bg-hover); color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:10px; font-weight:700; cursor:pointer; text-align:center; transition:all .15s; user-select:none; }
+  .class-toggle:hover { color:var(--text); border-color:var(--text-mid); }
+  .class-toggle.sel-p1 { color:var(--p1); border-color:var(--p1); background:rgba(255,68,68,.12); }
+  .class-toggle.sel-p2 { color:var(--p2); border-color:var(--p2); background:rgba(255,170,0,.12); }
+  .class-toggle.sel-p3 { color:var(--p3); border-color:var(--p3); background:rgba(68,170,255,.12); }
+
+  .hp-rank-section { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .hp-rank-header  { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); }
+  .hp-rank-title   { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--accent2); display:flex; align-items:center; gap:6px; }
+  .hp-rank-list { max-height:400px; overflow-y:auto; }
+  .hp-rank-list::-webkit-scrollbar { width:4px; }
+  .hp-rank-list::-webkit-scrollbar-track { background:var(--bg-void); }
+  .hp-rank-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+
+  .hp-row { display:flex; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border2); gap:8px; position:relative; overflow:hidden; transition:background .1s; }
+  .hp-row:last-child { border-bottom:none; }
+  .hp-row:hover { background:var(--bg-hover); }
+  .hp-bar-bg { position:absolute; left:0;top:0;bottom:0; pointer-events:none; opacity:.1; }
+  .hp-bar { position:absolute; left:0;bottom:0; height:3px; transition:width .4s; opacity:.8; }
+  .hp-prio-badge { width:20px; height:20px; border-radius:3px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; font-size:10px; font-weight:900; flex-shrink:0; }
+  .prio-1-badge { background:rgba(255,68,68,.2); color:var(--p1); border:1px solid var(--p1); }
+  .prio-2-badge { background:rgba(255,170,0,.2); color:var(--p2); border:1px solid var(--p2); }
+  .prio-3-badge { background:rgba(68,170,255,.2); color:var(--p3); border:1px solid var(--p3); }
+  .hp-val { font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; text-align:right; flex-shrink:0; min-width:60px; }
+  .hp-pct { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; text-align:right; }
+
+  /* ── COLORS ── */
+  .col-sent   { color:var(--sent); }
+  .col-legion { color:var(--legion); }
+  .col-gold   { color:var(--gold); }
+  .col-crit   { color:var(--crit); }
+  .col-ally   { color:var(--gxg-ally); }
+  .col-enemy  { color:var(--gxg-enemy); }
+  .col-boss   { color:var(--boss-bar); }
+  .col-pvetop { color:var(--pve-top); }
+  .col-buffhi { color:var(--buff-hi); }
+  .col-bufflo { color:var(--buff-lo); }
+  .col-accent2{ color:var(--accent2); }
+  .col-guild  { color:var(--guild-col); }
+
+  .reset-btn { background:var(--bg-hover);border:1px solid var(--border);color:var(--text-mid);padding:3px 10px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;transition:all .15s; }
+  .reset-btn:hover { color:var(--gold);border-color:var(--gold2); }
+
+  .footer { background:var(--bg-panel);border-top:1px solid var(--border);padding:4px 16px;display:flex;justify-content:space-between;align-items:center;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);position:sticky;bottom:0; }
+
+  @media (max-width:600px) { .fac-panels,.spotlight-row,.buff-spotlight { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">⚔ ARINAR <span>COMBAT CENTER</span></div>
+  <div class="header-right">
+    <span id="clock">00:00:00</span>
+    <span><span class="status-dot" id="statusDot"></span> <span id="statusText">OFFLINE</span></span>
+  </div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn" id="tabWar"   onclick="switchTab('war')">⚔ WAR <span class="tab-badge col-legion" id="warBadge">0/0</span></button>
+  <button class="tab-btn" id="tabGxg"   onclick="switchTab('gxg')">🏰 GxG <span class="tab-badge col-ally" id="gxgBadge">0v0</span></button>
+  <button class="tab-btn" id="tabPve"   onclick="switchTab('pve')">💀 PVE <span class="tab-badge col-boss" id="pveBadge">BOSS</span></button>
+  <button class="tab-btn" id="tabGuild" onclick="switchTab('guild')">🏛 GUILDS <span class="tab-badge col-guild" id="guildBadge">0</span></button>
+</div>
+
+<!-- ══════════ WAR ══════════ -->
+<div class="page" id="pageWar">
+  <div class="action-bar">
+    <button class="action-btn" onclick="saveTab('war')">💾 Salvar TXT</button>
+    <button class="action-btn danger" onclick="resetTab('war')">↺ Reset</button>
+  </div>
+  <div class="tug-bar-wrapper">
+    <div class="tug-bar-header">
+      <span class="tug-label-left">⚔ SENTINELAS <strong id="warSentAlive">0</strong> vivos</span>
+      <span class="tug-center-pct" id="warTugPct">50 — 50</span>
+      <span class="tug-label-right"><strong id="warLegAlive">0</strong> vivos 💀 LEGIÃO</span>
+    </div>
+    <div class="tug-bar">
+      <div class="tug-sent" id="warTugSent" style="width:50%">50%</div>
+      <div class="tug-legion" id="warTugLeg">50%</div>
+      <div class="tug-divider"></div>
+    </div>
+  </div>
+  <div class="fac-panels">
+    <div class="fac-panel fac-panel-sent">
+      <div class="fac-top-bar fac-top-bar-sent"></div>
+      <div class="fac-header col-sent">⚔ SENTINELAS <span id="warSentTotal">0/10</span></div>
+      <div class="fac-count fac-count-sent" id="warSentCount">0</div>
+      <div class="fac-classes" id="warSentClasses"></div>
+    </div>
+    <div class="fac-panel fac-panel-leg">
+      <div class="fac-top-bar fac-top-bar-leg"></div>
+      <div class="fac-header col-legion">💀 LEGIÃO <span id="warLegTotal">0/10</span></div>
+      <div class="fac-count fac-count-leg" id="warLegCount">0</div>
+      <div class="fac-classes" id="warLegClasses"></div>
+    </div>
+  </div>
+  <div class="rank-section">
+    <div class="rank-header">
+      <div class="rank-title col-gold">⚡ RANKING DE DANO</div>
+      <div class="sub-tabs">
+        <div class="sub-tab active" id="warTabDmg"  onclick="switchWarRank('dmg')">TOP DMG</div>
+        <div class="sub-tab"        id="warTabRecv" onclick="switchWarRank('recv')">RECEBIDO</div>
+        <div class="sub-tab"        id="warTabCrit" onclick="switchWarRank('crit')">CRÍTICO</div>
+      </div>
+    </div>
+    <div class="rank-list" id="warRankList"></div>
+  </div>
+</div>
+
+<!-- ══════════ GxG ══════════ -->
+<div class="page" id="pageGxg">
+  <div class="action-bar">
+    <button class="action-btn" onclick="saveTab('gxg')">💾 Salvar TXT</button>
+    <button class="action-btn danger" onclick="resetTab('gxg')">↺ Reset</button>
+  </div>
+
+  <div class="gxg-subnav">
+    <button class="gxg-subbtn active" id="gxgSubRank" onclick="switchGxgSub('rank')">⚡ RANKING</button>
+    <button class="gxg-subbtn"        id="gxgSubBuff" onclick="switchGxgSub('buff')">✨ BUFFS</button>
+    <button class="gxg-subbtn"        id="gxgSubHp"   onclick="switchGxgSub('hp')">❤ HP / PRIO</button>
+  </div>
+
+  <!-- ── RANKING VIEW ── -->
+  <div id="gxgViewRank">
+    <div class="guild-filter-bar">
+      <span class="guild-filter-label">FILTRO:</span>
+      <div class="guild-filter-pills" id="gxgRankGuildPills"></div>
+    </div>
+    <div class="guild-selector" id="gxgAllyEnemySelector">
+      <div class="guild-sel-group">
+        <div class="guild-dot-ally"></div><label>ALIADA</label>
+        <select id="gxgAllySelect" onchange="updateGxgTug()"><option value="__all__">Minha Guilda</option></select>
+      </div>
+      <div class="guild-sel-group">
+        <div class="guild-dot-enemy"></div><label>INIMIGA</label>
+        <select id="gxgEnemySelect" onchange="updateGxgTug()"><option value="__all__">Selecionar...</option></select>
+      </div>
+      <button class="reset-btn" onclick="resetGxg()">↺ Reset</button>
+    </div>
+    <div class="tug-bar-wrapper">
+      <div class="tug-bar-header">
+        <span style="color:var(--gxg-ally);font-weight:700;">🛡 ALIADA <strong id="gxgAllyAlive">0</strong> vivos</span>
+        <span class="tug-center-pct" id="gxgTugPct">50 — 50</span>
+        <span style="color:var(--gxg-enemy);font-weight:700;"><strong id="gxgEnemyAlive">0</strong> vivos ⚔ INIMIGA</span>
+      </div>
+      <div class="tug-bar">
+        <div class="tug-sent tug-ally"   id="gxgTugAlly"  style="width:50%">50%</div>
+        <div class="tug-legion tug-enemy" id="gxgTugEnemy">50%</div>
+        <div class="tug-divider"></div>
+      </div>
+    </div>
+    <div class="rank-section">
+      <div class="rank-header">
+        <div class="rank-title col-ally">⚡ RANKING GxG <span id="gxgRankGuildLabel" style="color:var(--text-mid);font-size:10px;margin-left:4px;"></span></div>
+        <div class="sub-tabs">
+          <div class="sub-tab active" id="gxgTabDmg"  onclick="switchGxgRank('dmg')">TOP DMG</div>
+          <div class="sub-tab"        id="gxgTabRecv" onclick="switchGxgRank('recv')">RECEBIDO</div>
+          <div class="sub-tab"        id="gxgTabCrit" onclick="switchGxgRank('crit')">CRÍTICO</div>
+        </div>
+      </div>
+      <div class="rank-list" id="gxgRankList"></div>
+    </div>
+  </div>
+
+  <!-- ── BUFFS VIEW ── -->
+  <div id="gxgViewBuff" style="display:none">
+    <div class="guild-filter-bar">
+      <span class="guild-filter-label">GUILDA:</span>
+      <div class="guild-filter-pills" id="gxgBuffGuildPills"></div>
+    </div>
+    <div class="buff-section">
+      <div class="buff-header">
+        <div class="buff-title col-buffhi">✨ BUFFS <span id="buffGuildLabel" style="color:var(--text-mid);font-size:10px;margin-left:4px;"></span></div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim)" id="buffTotalPlayers">0 players</span>
+      </div>
+      <div class="buff-spotlight">
+        <div class="buff-spot-card buff-spot-most">
+          <div class="buff-spot-label">✨ MAIS BUFFS</div>
+          <div class="buff-spot-name col-buffhi" id="buffMostName">—</div>
+          <div class="buff-spot-class"           id="buffMostClass">Aguardando...</div>
+          <div class="buff-spot-count col-buffhi" id="buffMostCount">—</div>
+          <div style="display:flex;gap:4px;margin-top:4px" id="buffMostBadges"></div>
+        </div>
+        <div class="buff-spot-card buff-spot-least">
+          <div class="buff-spot-label">⚠ MENOS BUFFS</div>
+          <div class="buff-spot-name col-bufflo" id="buffLeastName">—</div>
+          <div class="buff-spot-class"           id="buffLeastClass">Aguardando...</div>
+          <div class="buff-spot-count col-bufflo" id="buffLeastCount">—</div>
+          <div style="display:flex;gap:4px;margin-top:4px" id="buffLeastBadges"></div>
+        </div>
+      </div>
+      <div class="buff-list" id="buffRankList"></div>
+    </div>
+  </div>
+
+  <!-- ── HP / PRIORIDADE VIEW ── -->
+  <div id="gxgViewHp" style="display:none" class="hp-view">
+    <div class="prio-selector">
+      <button class="prio-btn active-p1" id="prioBtnP1" onclick="selectPrioEdit(1)">🔴 PRIORIDADE 1</button>
+      <button class="prio-btn"           id="prioBtnP2" onclick="selectPrioEdit(2)">🟡 PRIORIDADE 2</button>
+      <button class="prio-btn"           id="prioBtnP3" onclick="selectPrioEdit(3)">🔵 PRIORIDADE 3</button>
+    </div>
+    <div class="class-picker-panel">
+      <div class="class-picker-header">
+        <span id="prioPickerLabel" style="color:var(--p1)">🔴 SELECIONE AS CLASSES — PRIORIDADE 1</span>
+        <span style="font-size:9px;color:var(--text-dim);margin-left:auto">clique para alternar</span>
+      </div>
+      <div class="class-picker-grid" id="classPickerGrid"></div>
+    </div>
+    <div class="hp-rank-section">
+      <div class="hp-rank-header">
+        <div class="hp-rank-title">❤ HP EM TEMPO REAL — CLASSES PRIORIZADAS</div>
+        <span style="font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace" id="hpTotalShown">0 players</span>
+      </div>
+      <div class="hp-rank-list" id="hpRankList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PVE ══════════ -->
+<div class="page" id="pagePve">
+  <div class="action-bar">
+    <button class="action-btn" onclick="saveTab('pve')">💾 Salvar TXT</button>
+    <button class="action-btn danger" onclick="resetTab('pve')">↺ Reset</button>
+  </div>
+  <div class="boss-section">
+    <div class="boss-name-row">
+      <div class="boss-name"><span>💀</span><span id="bossName">Aguardando boss...</span></div>
+      <span class="boss-hp-text" id="bossHpText">—</span>
+    </div>
+    <div class="boss-bar-track"><div class="boss-bar-fill" id="bossBarFill" style="width:100%"></div></div>
+    <div class="boss-stats">
+      <div class="boss-stat"><div class="boss-stat-val col-boss" id="bossTotalDmg">0</div><div class="boss-stat-lbl">DANO TOTAL</div></div>
+      <div class="boss-stat"><div class="boss-stat-val col-pvetop" id="bossTopDps">0/s</div><div class="boss-stat-lbl">TOP DPS</div></div>
+      <div class="boss-stat"><div class="boss-stat-val col-crit" id="bossTopCrit">0</div><div class="boss-stat-lbl">MAIOR CRÍTICO</div></div>
+    </div>
+  </div>
+  <div class="spotlight-row">
+    <div class="spotlight-card spotlight-topDmg">
+      <div class="spotlight-card-label">⚡ MAIS DANO</div>
+      <div class="spotlight-player-name col-pvetop" id="pveTopDmgName">—</div>
+      <div class="spotlight-class"                  id="pveTopDmgClass">Aguardando...</div>
+      <div class="spotlight-value col-pvetop"        id="pveTopDmgVal">—</div>
+    </div>
+    <div class="spotlight-card spotlight-focused">
+      <div class="spotlight-card-label">🎯 PLAYER FOCADO <span class="focused-badge">ALVO DO BOSS</span></div>
+      <div class="spotlight-player-name col-accent2" id="pveFocusName">—</div>
+      <div class="spotlight-class"                   id="pveFocusClass">Aguardando...</div>
+      <div class="spotlight-value col-accent2"        id="pveFocusRecv">—</div>
+    </div>
+  </div>
+  <div class="rank-section">
+    <div class="rank-header">
+      <div class="rank-title col-boss">⚡ RANKING PVE</div>
+      <div class="sub-tabs">
+        <div class="sub-tab active" id="pveTabDmg"  onclick="switchPveRank('dmg')">TOP DMG</div>
+        <div class="sub-tab"        id="pveTabRecv" onclick="switchPveRank('recv')">RECEBIDO</div>
+        <div class="sub-tab"        id="pveTabCrit" onclick="switchPveRank('crit')">CRÍTICO</div>
+      </div>
+    </div>
+    <div class="rank-list" id="pveRankList"></div>
+  </div>
+</div>
+
+<!-- ══════════ GUILDS ══════════ -->
+<div class="page" id="pageGuild">
+  <div class="action-bar">
+    <button class="action-btn" onclick="saveTab('guild')">💾 Salvar TXT</button>
+    <button class="action-btn danger" onclick="resetTab('guild')">↺ Reset</button>
+  </div>
+  <div class="guild-rank-section">
+    <div class="guild-rank-header">
+      <div class="guild-rank-title">🏛 RANKING DE GUILDAS — PLAYERS NO MAPA</div>
+      <span style="font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace" id="guildTotalCount">0 guildas</span>
+    </div>
+    <div class="guild-list" id="guildRankList"></div>
+  </div>
+  <div class="guild-players-panel" id="guildPlayersPanel" style="display:none">
+    <div class="guild-players-header">
+      <div class="guild-players-title" id="guildPlayersTitle">— PLAYERS</div>
+      <span style="font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace" id="guildPlayersCount">0</span>
+    </div>
+    <div class="guild-players-list" id="guildPlayersList"></div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>⚔ Arinar Tracker v2</span>
+  <span id="footerRight"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const CLASS_ICON = {1:"PA",2:"SA",3:"MG",7:"BD",13:"SK",8:"RG",9:"DR",15:"WD",19:"BM",17:"TM",4:"BR",5:"RO",6:"SH",10:"DK",12:"WL",11:"NC",14:"HU",18:"CC",16:"CH",20:"RP"};
+const CLASS_NAME = {1:"Paladino",2:"Sacerdote",3:"Mago",7:"Bladedancer",13:"Seeker",8:"Ranger",9:"Druida",15:"Warden",19:"Beastmaster",17:"Templário",4:"Barbarian",5:"Rogue",6:"Shaman",10:"Deathknight",12:"Warlock",11:"Necromancer",14:"Hunter",18:"Cacique",16:"Charmer",20:"Reaper"};
+const SENT_CLASSES = [1,2,3,7,13,8,9,15,19,17];
+const LEG_CLASSES  = [4,5,6,10,12,11,14,18,16,20];
+const ALL_CLASSES  = [...SENT_CLASSES, ...LEG_CLASSES];
+
+// ═══════════════════════════════════════════════════
+// ESTADO LIVE
+// ═══════════════════════════════════════════════════
+let liveSent     = [];
+let liveLeg      = [];
+let liveAll      = [];
+let liveRankDmg  = [];
+let liveRankRecv = [];
+let liveRankCrit = [];
+
+// Snapshot no momento do reset — subtraído dos valores ao exibir
+let _resetSnap     = {};  // { playerName: { dmg, recv } } — acumulados
+let _resetCritSnap = {};  // { playerName: val } — maior hit ANTES do reset
+let _resetTime = 0;
+let liveBuffs    = [];
+let liveBoss     = {name:"—", cur_hp:0, max_hp:1};
+
+// ── Render guards: evita reconstruir DOM enquanto usuário interage ──
+// Guarda um fingerprint do último estado renderizado por seção.
+// Só reconstrói se o conteúdo realmente mudou.
+let _lastGuildFingerprint  = "";
+let _lastBuffPillsFingerprint = "";
+let _lastGxgPillsFingerprint  = "";
+let _lastWarRankFingerprint   = "";
+let _lastGxgRankFingerprint   = "";
+let _lastPveRankFingerprint   = "";
+let _lastFacSentFingerprint   = "";
+let _lastFacLegFingerprint    = "";
+
+function _fp(obj) {
+  // Fingerprint leve: JSON dos campos relevantes
+  try { return JSON.stringify(obj); } catch(e) { return String(Math.random()); }
+}
+
+// ═══════════════════════════════════════════════════
+// STATE UI
+// ═══════════════════════════════════════════════════
+let currentTab    = 'war';
+let warRankTab    = 'dmg';
+let gxgRankTab    = 'dmg';
+let gxgSub        = 'rank';
+let gxgRankGuild  = '__all__';
+let gxgBuffGuild  = '__all__';
+let pveRankTab    = 'dmg';
+let selectedGuild = null;
+
+// HP priority state
+// prioMap: { classId: 1|2|3 } — only assigned classes appear
+let prioMap     = {};
+let editingPrio = 1;
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+const fmtNum = n => n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':String(Math.round(n));
+
+// Converte string formatada (ex: "1.2M", "300k", "450") para número
+function parseVal(v) {
+  if (!v) return 0;
+  v = String(v).trim();
+  if (v.endsWith('M')) return parseFloat(v)*1e6;
+  if (v.endsWith('k')) return parseFloat(v)*1e3;
+  return parseFloat(v)||0;
+}
+
+// Aplica o reset snapshot: subtrai valores anteriores das rows
+function applyReset(rows, field) {
+  if (!_resetTime) return rows;
+
+  // Crítico é max hit — só mostra se o hit atual for MAIOR que o do snapshot
+  if (field === 'crit') {
+    const filtered = rows.filter(r => {
+      const base = _resetCritSnap[r.name] || 0;
+      return parseVal(r.val) > base;
+    });
+    if (!filtered.length) return [];
+    const max = parseVal(filtered[0].val);
+    return filtered.map((r,i) => ({
+      ...r,
+      rank: i+1,
+      bar_pct: max > 0 ? parseVal(r.val)/max*100 : 0
+    }));
+  }
+
+  // DMG e RECV: subtrai o acumulado antes do reset
+  const result = rows.map(r => {
+    const snap  = _resetSnap[r.name];
+    const base  = snap ? (snap[field] || 0) : 0;
+    const delta = Math.max(0, parseVal(r.val) - base);
+    return { ...r, val: fmtNum(delta), bar_pct: 0, pct: '' };
+  }).filter(r => parseVal(r.val) > 0)
+    .sort((a,b) => parseVal(b.val) - parseVal(a.val));
+
+  if (!result.length) return [];
+  const maxVal = parseVal(result[0].val);
+  return result.map((r,i) => ({
+    ...r,
+    rank: i+1,
+    bar_pct: maxVal > 0 ? parseVal(r.val)/maxVal*100 : 0
+  }));
+}
+const fmtPct = (a,b) => { const t=a+b; return t?[Math.round(a/t*100),Math.round(b/t*100)]:[50,50]; };
+const rankCls = r => r===1?'first':r===2?'second':r===3?'third':'';
+const facCls  = f => f==='SENTINELAS'?'col-sent':f==='LEGIÃO'?'col-legion':'';
+const getGuilds = players => [...new Set(players.map(p=>p.guild).filter(Boolean))].sort();
+
+// ═══════════════════════════════════════════════════
+// PUSH PYTHON → JS
+// ═══════════════════════════════════════════════════
+// ── Fingerprints para evitar re-render desnecessário de listas interativas ──
+let _fpGuildList  = '';   // fingerprint da lista de guildas
+let _fpBuffPills  = '';   // fingerprint das pills de guilds na aba buff
+let _fpRankPills  = '';   // fingerprint das pills de guilds no GxG rank
+let _fpGuildCards = '';   // fingerprint dos cards de guilds (nomes+contagens)
+
+function _fp(arr) { return JSON.stringify(arr); }
+
+function onPythonPush(data) {
+  const ents = data.entities || [];
+  liveSent     = ents.filter(e => e.faccao === 'SENTINELAS');
+  liveLeg      = ents.filter(e => e.faccao === 'LEGIÃO');
+  liveAll      = ents;
+  liveRankDmg  = data.rows_dmg  || [];
+  liveRankRecv = data.rows_recv || [];
+  liveRankCrit = data.rows_crit || [];
+  liveBuffs    = data.buffs     || [];
+  if (data.bosses && data.bosses.length > 0) {
+    const b = data.bosses[0];
+    liveBoss = { name: b.name, cur_hp: b.cur_hp, max_hp: b.max_hp };
+  }
+
+  document.getElementById('clock').textContent = data.ts || '--:--:--';
+  document.getElementById('footerRight').textContent = `cycle: ${data.cycle_ms || 0}ms`;
+
+  // Badge de guildas (só recalcula uma vez por push)
+  const guildsData = buildGuildData();
+  document.getElementById('guildBadge').textContent = guildsData.length;
+
+  if (currentTab === 'war') {
+    updateWarTug();
+    buildFacClasses(liveSent,'warSentClasses','SENTINELAS');
+    buildFacClasses(liveLeg,'warLegClasses','LEGIÃO');
+    renderWarRank();
+  } else if (currentTab === 'gxg') {
+    updateGxgTug();
+    if (gxgSub === 'rank') refreshGxgRank();
+    else if (gxgSub === 'buff') refreshGxgBuff();
+    else if (gxgSub === 'hp') renderHpRank();
+  } else if (currentTab === 'pve') {
+    updateBoss(); renderPveRank();
+  } else if (currentTab === 'guild') {
+    renderGuildTab(guildsData);
+  }
+}
+
+function setStatus(online) {
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.classList.toggle('online', online);
+  text.textContent = online ? 'ONLINE' : 'CONECTANDO...';
+}
+
+// ═══════════════════════════════════════════════════
+// SAVE / RESET
+// ═══════════════════════════════════════════════════
+// Aguarda pywebview.api ficar disponível (pode levar ~500ms após load)
+async function _waitApi(ms=4000) {
+  const t = Date.now();
+  while (Date.now()-t < ms) {
+    if (window.pywebview && window.pywebview.api && window.pywebview.api.save_file) return true;
+    await new Promise(r => setTimeout(r, 60));
+  }
+  return false;
+}
+
+async function saveTab(tab) {
+  let lines = [];
+  const ts = document.getElementById('clock').textContent;
+  lines.push(`⚔ Arinar Tracker — ${tab.toUpperCase()} — ${ts}`);
+  lines.push('='.repeat(50));
+
+  if (tab === 'war') {
+    const rows = warRankTab==='dmg'?liveRankDmg:warRankTab==='recv'?liveRankRecv:liveRankCrit;
+    rows.forEach(r => lines.push(`${String(r.rank).padStart(2)}. ${r.name.padEnd(20)} [${r.class_name}]  ${r.val.padStart(8)}  ${r.pct||''}`));
+  } else if (tab === 'gxg') {
+    let rows = gxgRankTab==='dmg'?liveRankDmg:gxgRankTab==='recv'?liveRankRecv:liveRankCrit;
+    // aplica o mesmo filtro de guilda que aparece na tela
+    const ag = document.getElementById('gxgAllySelect').value;
+    const eg = document.getElementById('gxgEnemySelect').value;
+    if (gxgRankGuild !== '__all__') {
+      rows = rows.filter(r => r.guild === gxgRankGuild);
+    } else if (ag !== '__all__' && eg !== '__all__') {
+      rows = rows.filter(r => r.guild === ag || r.guild === eg);
+    } else if (ag !== '__all__') {
+      rows = rows.filter(r => r.guild === ag);
+    } else if (eg !== '__all__') {
+      rows = rows.filter(r => r.guild === eg);
+    }
+    // re-numera o rank para o TXT ficar limpo (1, 2, 3... sem pulos)
+    rows.forEach((r, i) => lines.push(`${String(i+1).padStart(2)}. ${r.name.padEnd(20)} [${r.class_name}]  ${r.val.padStart(8)}  ${r.pct||''}`));
+  } else if (tab === 'pve') {
+    liveRankDmg.forEach(r => lines.push(`${String(r.rank).padStart(2)}. ${r.name.padEnd(20)} [${r.class_name}]  ${r.val.padStart(8)}`));
+  } else if (tab === 'guild') {
+    buildGuildData().forEach((g,i) => {
+      lines.push('\n'+(i+1)+'. '+g.name+' ('+g.count+' players)');
+      g.players.forEach(p => lines.push(`   ${CLASS_ICON[p.class_id]||'?'} ${p.name} — ${p.class_name}`));
+    });
+  }
+
+  const filename = `arinar_${tab}_${ts.replace(/:/g,'')}.txt`;
+  const text = lines.join('\n');
+
+  // Tenta salvar via Python (pywebview)
+  const apiOk = await _waitApi();
+  if (apiOk) {
+    try {
+      const result = await window.pywebview.api.save_file(filename, text);
+      const ok = result && !String(result).startsWith('ERRO');
+      _flashBtn(tab, ok ? '✔ Salvo' : '✖ Erro');
+      return;
+    } catch(e) { console.warn('save_file:', e); }
+  }
+  // Fallback: download pelo browser
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function _flashBtn(tab, msg) {
+  const ids = {war:'pageWar', gxg:'pageGxg', pve:'pagePve', guild:'pageGuild'};
+  const page = document.getElementById(ids[tab]);
+  if (!page) return;
+  const btn = page.querySelector('.action-btn');
+  if (!btn) return;
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  btn.style.color = msg.startsWith('✔') ? 'var(--sent)' : 'var(--accent2)';
+  setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+}
+
+async function resetTab(tab) {
+  // 1. Chama o Python para zerar os dados reais
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.reset_damage) {
+    try { await window.pywebview.api.reset_damage(); } catch(e) { console.warn('reset_damage:', e); }
+  }
+  // 2. Zera snapshot local e dados live
+  _resetSnap = {}; _resetCritSnap = {}; _resetTime = 0;
+  liveRankDmg=[]; liveRankRecv=[]; liveRankCrit=[];
+  liveSent=[]; liveLeg=[]; liveAll=[]; liveBuffs=[];
+  // 3. Re-renderiza vazio
+  if (tab === 'war')   { renderWarRank(); updateWarTug(); buildFacClasses([],'warSentClasses','SENTINELAS'); buildFacClasses([],'warLegClasses','LEGIÃO'); }
+  if (tab === 'gxg')   { resetGxg(); refreshGxgRank(); }
+  if (tab === 'pve')   { updateBoss(); renderPveRank(); }
+  if (tab === 'guild') { selectedGuild=null; renderGuildTab(); }
+  _flashBtn(tab, '✔ Reset');
+}
+
+// ═══════════════════════════════════════════════════
+// GUILD PILLS
+// ═══════════════════════════════════════════════════
+function buildGuildPills(containerId, guilds, active, onPick) {
+  const c = document.getElementById(containerId);
+  const newFp = _fp(guilds);
+  const oldFp = c.dataset.fp || '';
+
+  if (newFp !== oldFp) {
+    // Estrutura mudou — reconstrói tudo
+    c.innerHTML = '';
+    const allPill = document.createElement('div');
+    allPill.className = 'guild-pill geral-pill';
+    allPill.textContent = 'GERAL ▾';
+    allPill.onclick = () => onPick('__all__');
+    c.appendChild(allPill);
+    guilds.forEach(g => {
+      const p = document.createElement('div');
+      p.textContent = g;
+      p.onclick = () => onPick(g);
+      c.appendChild(p);
+    });
+    c.dataset.fp = newFp;
+  }
+
+  // Atualiza só a classe active sem recriar elementos
+  Array.from(c.children).forEach((el, i) => {
+    const g = i === 0 ? '__all__' : guilds[i - 1];
+    const isActive = g === active;
+    if (i === 0) {
+      el.className = 'guild-pill geral-pill' + (isActive ? ' active' : '');
+    } else {
+      el.className = 'guild-pill' + (isActive ? ' active' : '');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// TUG BARS
+// ═══════════════════════════════════════════════════
+function updateWarTug() {
+  const sa = liveSent.filter(p=>p.alive).length;
+  const la = liveLeg.filter(p=>p.alive).length;
+  const [sp,lp] = fmtPct(sa,la);
+  document.getElementById('warSentAlive').textContent = sa;
+  document.getElementById('warLegAlive').textContent  = la;
+  document.getElementById('warTugPct').textContent    = `${sp} — ${lp}`;
+  const ts = document.getElementById('warTugSent');
+  ts.style.width = sp+'%'; ts.textContent = sp+'%';
+  document.getElementById('warTugLeg').textContent = lp+'%';
+  document.getElementById('warBadge').textContent = `${sa}/${la}`;
+}
+
+function updateGxgTug() {
+  const ag = document.getElementById('gxgAllySelect').value;
+  const eg = document.getElementById('gxgEnemySelect').value;
+  const allies  = ag==='__all__'?liveSent:liveAll.filter(p=>p.guild===ag);
+  const enemies = eg==='__all__'?liveLeg :liveAll.filter(p=>p.guild===eg);
+  const aa = allies.filter(p=>p.alive).length;
+  const ea = enemies.filter(p=>p.alive).length;
+  const [ap,ep] = fmtPct(aa,ea);
+  document.getElementById('gxgAllyAlive').textContent  = aa;
+  document.getElementById('gxgEnemyAlive').textContent = ea;
+  document.getElementById('gxgTugPct').textContent     = `${ap} — ${ep}`;
+  const ta = document.getElementById('gxgTugAlly');
+  ta.style.width = ap+'%'; ta.textContent = ap+'%';
+  document.getElementById('gxgTugEnemy').textContent = ep+'%';
+  document.getElementById('gxgBadge').textContent = `${aa}v${ea}`;
+}
+
+function resetGxg() {
+  gxgRankGuild='__all__'; gxgBuffGuild='__all__';
+  refreshGxgRank(); refreshGxgBuff(); updateGxgTug();
+}
+
+// ═══════════════════════════════════════════════════
+// FACTION CLASS PANELS
+// ═══════════════════════════════════════════════════
+function buildFacClasses(players, containerId, faction) {
+  const counts = {};
+  players.forEach(p => { counts[p.class_id]=(counts[p.class_id]||0)+1; });
+  const pool = faction==='SENTINELAS'?SENT_CLASSES:LEG_CLASSES;
+  const col  = faction==='SENTINELAS'?'col-sent':'col-legion';
+  const tot  = players.length;
+
+  // Fingerprint por containerId
+  const fpKey = containerId === 'warSentClasses' ? '_lastFacSentFingerprint' : '_lastFacLegFingerprint';
+  const fp = _fp(counts) + tot;
+  if (fp === window[fpKey]) return;  // nada mudou
+  window[fpKey] = fp;
+
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  pool.forEach(cid => {
+    const n = counts[cid]||0;
+    const d = document.createElement('div');
+    d.className = 'class-row'; d.style.opacity = n?'1':'0.3';
+    d.innerHTML = `<span class="class-icon ${n?col:''}">${CLASS_ICON[cid]}</span><span style="font-size:11px">${CLASS_NAME[cid]}</span><span class="class-cnt ${n?col:''}">${n||'—'}</span>`;
+    c.appendChild(d);
+  });
+  document.getElementById(containerId.replace('Classes','Count')).textContent = tot;
+  document.getElementById(containerId.replace('Classes','Total')).textContent = `${tot}/${pool.length}`;
+}
+
+// ═══════════════════════════════════════════════════
+// RANK ROWS (rows vêm do Python já ordenadas)
+// ═══════════════════════════════════════════════════
+function renderRowsToList(rows, containerId, accentColor, field) {
+  // Aplica o snapshot de reset se existir
+  if (_resetTime && field) rows = applyReset(rows, field);
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  rows.forEach(r => {
+    const pct = r.bar_pct.toFixed(1);
+    const fc  = facCls(r.faccao);
+    const row = document.createElement('div');
+    row.className = 'rank-row' + (r.is_you ? ' rank-you' : '');
+    row.innerHTML = `
+      <div class="rank-bar-bg" style="width:${pct}%;background:${accentColor}"></div>
+      <div class="rank-bar"    style="width:${pct}%;background:${accentColor}"></div>
+      <div class="rank-num ${rankCls(r.rank)}">${r.rank}</div>
+      <div class="rank-avatar ${fc}">${CLASS_ICON[r.class_id]||'?'}</div>
+      <div class="rank-info">
+        <div class="rank-name ${fc}">${r.name}</div>
+        <div class="rank-sub">${r.class_name} · ${r.guild}</div>
+      </div>
+      <div>
+        <div class="rank-val" style="color:${accentColor}">${r.val}</div>
+        ${r.pct?`<div class="rank-dps">${r.pct}</div>`:''}
+      </div>`;
+    c.appendChild(row);
+  });
+}
+
+function buildRankList(players, containerId, field, accentColor) {
+  const sorted = [...players].sort((a,b)=>b[field]-a[field]);
+  const max = sorted[0]?.[field]||1;
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  sorted.forEach((p,i) => {
+    const rank = i+1;
+    const pct  = (p[field]/max*100).toFixed(1);
+    const fc   = facCls(p.faccao);
+    const row  = document.createElement('div');
+    row.className = 'rank-row';
+    row.innerHTML = `
+      <div class="rank-bar-bg" style="width:${pct}%;background:${accentColor}"></div>
+      <div class="rank-bar"    style="width:${pct}%;background:${accentColor}"></div>
+      <div class="rank-num ${rankCls(rank)}">${rank}</div>
+      <div class="rank-avatar ${fc}">${CLASS_ICON[p.class_id]||'?'}</div>
+      <div class="rank-info">
+        <div class="rank-name ${fc}">${p.name}</div>
+        <div class="rank-sub">${p.class_name} · ${p.guild}</div>
+      </div>
+      <div><div class="rank-val" style="color:${accentColor}">${fmtNum(p[field])}</div></div>`;
+    c.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// BUFF LIST
+// ═══════════════════════════════════════════════════
+function buildBuffList(players) {
+  const valid  = players.filter(p=>p.buff_count!==undefined);
+  const sorted = [...valid].sort((a,b)=>b.buff_count-a.buff_count);
+  const max    = sorted[0]?.buff_count||1;
+  function fillSpot(p, nameId, clsId, cntId, badId) {
+    if(!p) return;
+    document.getElementById(nameId).textContent = p.name;
+    document.getElementById(clsId).textContent  = `${p.class_name} · ${p.guild}`;
+    document.getElementById(cntId).textContent  = `${p.buff_count} buffs`;
+    document.getElementById(badId).innerHTML =
+      (p.has_fero?'<span class="buff-badge buff-badge-fero">FERO</span>':'') +
+      (p.has_resi?'<span class="buff-badge buff-badge-resi">RESI</span>':'');
+  }
+  fillSpot(sorted[0],              'buffMostName','buffMostClass','buffMostCount','buffMostBadges');
+  fillSpot(sorted[sorted.length-1],'buffLeastName','buffLeastClass','buffLeastCount','buffLeastBadges');
+  document.getElementById('buffTotalPlayers').textContent = `${valid.length} players`;
+  const c = document.getElementById('buffRankList');
+  c.innerHTML = '';
+  sorted.forEach((p,i) => {
+    const rank  = i+1;
+    const pct   = (p.buff_count/max*100).toFixed(1);
+    const ratio = p.buff_count/max;
+    const barColor = `rgb(${Math.round(230*(1-ratio))},${Math.round(180*ratio+50*(1-ratio))},80)`;
+    const fc    = facCls(p.faccao);
+    const row   = document.createElement('div');
+    row.className = 'buff-row';
+    row.innerHTML = `
+      <div class="rank-bar-bg" style="width:${pct}%;background:${barColor}"></div>
+      <div class="rank-bar"    style="width:${pct}%;background:${barColor}"></div>
+      <div class="rank-num ${rankCls(rank)}">${rank}</div>
+      <div class="rank-avatar ${fc}">${CLASS_ICON[p.class_id]||'?'}</div>
+      <div class="rank-info">
+        <div class="rank-name ${fc}">${p.name}</div>
+        <div class="rank-sub">${p.class_name} · ${p.guild}</div>
+      </div>
+      <div class="buff-badges">
+        ${p.has_fero?'<span class="buff-badge buff-badge-fero">FERO</span>':''}
+        ${p.has_resi?'<span class="buff-badge buff-badge-resi">RESI</span>':''}
+      </div>
+      <div class="buff-count-num" style="color:${barColor}">${p.buff_count}</div>`;
+    c.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// HP PRIORITY VIEW
+// ═══════════════════════════════════════════════════
+const PRIO_COLORS = {1:'var(--p1)', 2:'var(--p2)', 3:'var(--p3)'};
+const PRIO_LABELS = {1:'🔴 SELECIONE AS CLASSES — PRIORIDADE 1', 2:'🟡 SELECIONE AS CLASSES — PRIORIDADE 2', 3:'🔵 SELECIONE AS CLASSES — PRIORIDADE 3'};
+const PRIO_STYLES = {1:'color:var(--p1)', 2:'color:var(--p2)', 3:'color:var(--p3)'};
+
+function selectPrioEdit(p) {
+  editingPrio = p;
+  [1,2,3].forEach(n => {
+    const btn = document.getElementById(`prioBtnP${n}`);
+    btn.className = 'prio-btn' + (n===p ? ` active-p${n}` : '');
+  });
+  document.getElementById('prioPickerLabel').textContent = PRIO_LABELS[p];
+  document.getElementById('prioPickerLabel').style = PRIO_STYLES[p];
+  renderClassPicker();
+}
+
+function renderClassPicker() {
+  const grid = document.getElementById('classPickerGrid');
+  grid.innerHTML = '';
+  ALL_CLASSES.forEach(cid => {
+    const assigned = prioMap[cid];
+    const btn = document.createElement('div');
+    // If assigned to current editing prio — show selected. If assigned to another — show that prio color (locked visual)
+    let cls = 'class-toggle';
+    if (assigned) cls += ` sel-p${assigned}`;
+    btn.className = cls;
+    btn.title = CLASS_NAME[cid];
+    btn.textContent = CLASS_ICON[cid];
+    btn.onclick = () => {
+      if (prioMap[cid] === editingPrio) {
+        delete prioMap[cid]; // deselect
+      } else {
+        prioMap[cid] = editingPrio; // assign (overrides previous prio)
+      }
+      renderClassPicker();
+      renderHpRank();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function renderHpRank() {
+  // Filter entities that have an assigned priority
+  const assigned = liveAll.filter(e => prioMap[e.class_id] !== undefined && e.max_hp > 0);
+  // Sort: priority asc, then hp asc (lowest hp = most urgent first)
+  assigned.sort((a,b) => {
+    const pa = prioMap[a.class_id], pb = prioMap[b.class_id];
+    if (pa !== pb) return pa - pb;
+    return a.cur_hp - b.cur_hp;
+  });
+  const maxHp = Math.max(...assigned.map(e => e.max_hp), 1);
+  document.getElementById('hpTotalShown').textContent = `${assigned.length} players`;
+  const c = document.getElementById('hpRankList');
+  c.innerHTML = '';
+  if (!assigned.length) {
+    c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;font-size:11px;">Nenhuma classe priorizada ainda.<br>Selecione classes acima.</div>';
+    return;
+  }
+  assigned.forEach((e, i) => {
+    const prio    = prioMap[e.class_id];
+    const hpPct   = e.max_hp > 0 ? (e.cur_hp / e.max_hp * 100) : 0;
+    const barPct  = (e.cur_hp / maxHp * 100).toFixed(1);
+    const hpColor = hpPct > 60 ? 'var(--sent)' : hpPct > 30 ? 'var(--gold)' : 'var(--accent2)';
+    const fc      = facCls(e.faccao);
+    const row     = document.createElement('div');
+    row.className = 'hp-row';
+    row.innerHTML = `
+      <div class="hp-bar-bg" style="width:${barPct}%;background:${hpColor}"></div>
+      <div class="hp-bar"    style="width:${barPct}%;background:${hpColor}"></div>
+      <div class="hp-prio-badge prio-${prio}-badge">${prio}</div>
+      <div class="rank-avatar ${fc}">${CLASS_ICON[e.class_id]||'?'}</div>
+      <div class="rank-info">
+        <div class="rank-name ${fc}">${e.name}</div>
+        <div class="rank-sub">${e.class_name} · ${e.guild||'—'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:80px">
+        <div class="hp-val" style="color:${hpColor}">${fmtNum(e.cur_hp)}</div>
+        <div class="hp-pct">${hpPct.toFixed(0)}% HP</div>
+      </div>`;
+    c.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// WAR RANK
+// ═══════════════════════════════════════════════════
+function renderWarRank() {
+  const rows  = warRankTab==='dmg'?liveRankDmg:warRankTab==='recv'?liveRankRecv:liveRankCrit;
+  const color = warRankTab==='dmg'?'var(--gold)':warRankTab==='recv'?'var(--accent2)':'var(--crit)';
+  renderRowsToList(rows, 'warRankList', color, warRankTab==='dmg'?'dmg':warRankTab==='recv'?'recv':'crit');
+}
+
+// ═══════════════════════════════════════════════════
+// GxG RANK REFRESH
+// ═══════════════════════════════════════════════════
+function refreshGxgRank() {
+  const tab    = gxgRankTab;
+  const source = tab==='dmg'?liveRankDmg:tab==='recv'?liveRankRecv:liveRankCrit;
+  const mapped = source.map(r => {
+    const raw = r.val||'0';
+    const num = raw.endsWith('M')?parseFloat(raw)*1e6:raw.endsWith('k')?parseFloat(raw)*1e3:parseFloat(raw)||0;
+    return { ...r, dmg:num, recv:num, crit:num };
+  });
+  const guilds  = getGuilds(mapped);
+  const gxgPillsFp = _fp(guilds) + gxgRankGuild;
+  if (gxgPillsFp !== _lastGxgPillsFingerprint) {
+    _lastGxgPillsFingerprint = gxgPillsFp;
+    buildGuildPills('gxgRankGuildPills', guilds, gxgRankGuild, g => { gxgRankGuild=g; refreshGxgRank(); });
+  }
+  const ag = document.getElementById('gxgAllySelect').value;
+  const eg = document.getElementById('gxgEnemySelect').value;
+  const allySelected  = ag !== '__all__';
+  const enemySelected = eg !== '__all__';
+
+  let players;
+  if (gxgRankGuild !== '__all__') {
+    // Filtro por pill de guilda específica
+    players = mapped.filter(p => p.guild === gxgRankGuild);
+  } else if (allySelected && enemySelected) {
+    // Ambas selecionadas — mostra só as duas guildas
+    players = mapped.filter(p => p.guild === ag || p.guild === eg);
+  } else if (allySelected) {
+    players = mapped.filter(p => p.guild === ag);
+  } else if (enemySelected) {
+    players = mapped.filter(p => p.guild === eg);
+  } else {
+    players = mapped;
+  }
+
+  let rankLabel = '— todos';
+  if (gxgRankGuild !== '__all__') rankLabel = `— ${gxgRankGuild}`;
+  else if (allySelected && enemySelected) rankLabel = `— ${ag} vs ${eg}`;
+  else if (allySelected)  rankLabel = `— ${ag}`;
+  else if (enemySelected) rankLabel = `— ${eg}`;
+
+  document.getElementById('gxgRankGuildLabel').textContent = rankLabel;
+  document.getElementById('gxgAllyEnemySelector').style.display = gxgRankGuild==='__all__'?'':'none';
+  const field = tab==='dmg'?'dmg':tab==='recv'?'recv':'crit';
+  const color = tab==='dmg'?'var(--gxg-ally)':tab==='recv'?'var(--gxg-enemy)':'var(--crit)';
+  // Aplica reset snapshot
+  let gxgPlayers = players;
+  if (_resetTime) {
+    gxgPlayers = players.map(p => {
+      const snap = _resetSnap[p.name];
+      if (!snap) return p;
+      const delta = Math.max(0, p[field] - (snap[field]||0));
+      return { ...p, [field]: delta, dmg: delta, recv: delta, crit: delta };
+    }).filter(p => p[field] > 0)
+      .sort((a,b) => b[field]-a[field]);
+  }
+  buildRankList(gxgPlayers,'gxgRankList',field,color);
+  const guildsAll = getGuilds(liveAll);
+  const ae=document.getElementById('gxgAllySelect'), ee=document.getElementById('gxgEnemySelect');
+  const pa=ae.value, pe=ee.value;
+  ae.innerHTML='<option value="__all__">Sentinelas</option>';
+  ee.innerHTML='<option value="__all__">Legião</option>';
+  guildsAll.forEach(g=>{ ae.innerHTML+=`<option value="${g}">${g}</option>`; ee.innerHTML+=`<option value="${g}">${g}</option>`; });
+  ae.value=pa; ee.value=pe;
+}
+
+// ═══════════════════════════════════════════════════
+// GxG BUFF REFRESH
+// ═══════════════════════════════════════════════════
+function refreshGxgBuff() {
+  const guilds  = getGuilds(liveBuffs);
+
+  // Pills: só reconstrói se a lista de guildas mudou
+  const pillsFp = _fp(guilds) + gxgBuffGuild;
+  if (pillsFp !== _lastBuffPillsFingerprint) {
+    _lastBuffPillsFingerprint = pillsFp;
+    buildGuildPills('gxgBuffGuildPills', guilds, gxgBuffGuild, g => { gxgBuffGuild=g; refreshGxgBuff(); });
+  }
+
+  const players = gxgBuffGuild==='__all__'?liveBuffs:liveBuffs.filter(p=>p.guild===gxgBuffGuild);
+  document.getElementById('buffGuildLabel').textContent = gxgBuffGuild==='__all__'?'— todos':`— ${gxgBuffGuild}`;
+  buildBuffList(players);
+}
+
+// ═══════════════════════════════════════════════════
+// GUILD TAB
+// ═══════════════════════════════════════════════════
+function buildGuildData() {
+  const map = {};
+  liveAll.forEach(e => {
+    if (!e.guild) return;
+    if (!map[e.guild]) map[e.guild] = { name:e.guild, count:0, sent:0, leg:0, players:[] };
+    map[e.guild].count++;
+    if (e.faccao==='SENTINELAS') map[e.guild].sent++;
+    else if (e.faccao==='LEGIÃO') map[e.guild].leg++;
+    map[e.guild].players.push(e);
+  });
+  return Object.values(map).sort((a,b)=>b.count-a.count);
+}
+
+function renderGuildTab(guilds) {
+  if (!guilds) guilds = buildGuildData();
+  document.getElementById('guildTotalCount').textContent = `${guilds.length} guildas`;
+  document.getElementById('guildBadge').textContent = guilds.length;
+  const maxCount = guilds[0]?.count || 1;
+  const c = document.getElementById('guildRankList');
+
+  // Fingerprint baseado em nome+contagem — ignora HP que muda a cada tick
+  const newFp = _fp(guilds.map(g => g.name + g.count));
+
+  if (c.dataset.fp !== newFp) {
+    // Lista mudou — reconstrói os cards
+    c.innerHTML = '';
+    guilds.forEach((g, i) => {
+      const pct  = (g.count / maxCount * 100).toFixed(1);
+      const card = document.createElement('div');
+      card.dataset.guild = g.name;
+      card.className = 'guild-card' + (selectedGuild===g.name?' active-guild-card':'');
+      card.innerHTML = `
+        <div class="guild-card-bar" style="width:${pct}%"></div>
+        <div class="guild-card-rank">${i+1}</div>
+        <div style="flex:1;min-width:0;pointer-events:none">
+          <div class="guild-card-name">${g.name}</div>
+          <div class="guild-card-fac">
+            ${g.sent>0?`<span class="col-sent">⚔ ${g.sent} SENT</span>`:''}
+            ${g.leg>0?`<span class="col-legion">💀 ${g.leg} LEG</span>`:''}
+          </div>
+        </div>
+        <div class="guild-card-count">${g.count}</div>`;
+      card.addEventListener('click', () => selectGuild(g.name));
+      c.appendChild(card);
+    });
+    c.dataset.fp = newFp;
+  } else {
+    // Só atualiza a classe active sem recriar nada
+    Array.from(c.children).forEach(card => {
+      const isActive = card.dataset.guild === selectedGuild;
+      card.className = 'guild-card' + (isActive ? ' active-guild-card' : '');
+    });
+  }
+
+  if (selectedGuild) {
+    const g = guilds.find(x=>x.name===selectedGuild);
+    if (g) showGuildPlayers(g);
+    else hideGuildPlayers();
+  }
+}
+
+function selectGuild(name) {
+  selectedGuild = selectedGuild===name ? null : name;
+  renderGuildTab();
+}
+
+function showGuildPlayers(g) {
+  const panel = document.getElementById('guildPlayersPanel');
+  panel.style.display = '';
+  document.getElementById('guildPlayersTitle').textContent = `🏛 ${g.name} — PLAYERS`;
+  document.getElementById('guildPlayersCount').textContent = `${g.count} players`;
+  const list = document.getElementById('guildPlayersList');
+  list.innerHTML = '';
+  const sorted = [...g.players].sort((a,b)=>a.class_id-b.class_id);
+  sorted.forEach(p => {
+    const fc  = facCls(p.faccao);
+    const row = document.createElement('div');
+    row.className = 'guild-player-row';
+    row.innerHTML = `
+      <div class="guild-player-cls ${fc}">${CLASS_ICON[p.class_id]||'?'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="guild-player-name ${fc}">${p.name}</div>
+        <div class="guild-player-cls-name">${p.class_name}</div>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-mid)">${p.alive?'<span style="color:var(--sent)">● VIVO</span>':'<span style="color:var(--accent)">● MORTO</span>'}</div>`;
+    list.appendChild(row);
+  });
+}
+
+function hideGuildPlayers() {
+  document.getElementById('guildPlayersPanel').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════
+// SWITCHERS
+// ═══════════════════════════════════════════════════
+function switchWarRank(tab) {
+  warRankTab = tab;
+  ['Dmg','Recv','Crit'].forEach(t => document.getElementById('warTab'+t).classList.toggle('active',tab===t.toLowerCase()));
+  renderWarRank();
+}
+
+function switchGxgRank(tab) {
+  gxgRankTab = tab;
+  ['Dmg','Recv','Crit'].forEach(t => document.getElementById('gxgTab'+t).classList.toggle('active',tab===t.toLowerCase()));
+  refreshGxgRank();
+}
+
+function switchGxgSub(sub) {
+  gxgSub = sub;
+  document.getElementById('gxgSubRank').className = 'gxg-subbtn'+(sub==='rank'?' active':'');
+  document.getElementById('gxgSubBuff').className = 'gxg-subbtn'+(sub==='buff'?' active-buff':'');
+  document.getElementById('gxgSubHp').className   = 'gxg-subbtn'+(sub==='hp'  ?' active-hp':'');
+  document.getElementById('gxgViewRank').style.display = sub==='rank'?'':'none';
+  document.getElementById('gxgViewBuff').style.display = sub==='buff'?'':'none';
+  document.getElementById('gxgViewHp').style.display   = sub==='hp'  ?'':'none';
+  if (sub==='buff') refreshGxgBuff();
+  if (sub==='hp')   renderHpRank();
+}
+
+function switchPveRank(tab) {
+  pveRankTab = tab;
+  ['Dmg','Recv','Crit'].forEach(t => document.getElementById('pveTab'+t).classList.toggle('active',tab===t.toLowerCase()));
+  renderPveRank();
+}
+
+function renderPveRank() {
+  const rows  = pveRankTab==='dmg'?liveRankDmg:pveRankTab==='recv'?liveRankRecv:liveRankCrit;
+  const color = pveRankTab==='dmg'?'var(--pve-top)':pveRankTab==='recv'?'var(--accent2)':'var(--crit)';
+  renderRowsToList(rows, 'pveRankList', color, pveRankTab==='dmg'?'dmg':pveRankTab==='recv'?'recv':'crit');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['war','gxg','pve','guild'].forEach(t => {
+    const page = document.getElementById('page'+t[0].toUpperCase()+t.slice(1));
+    if (page) page.classList.toggle('active', t===tab);
+    const btn  = document.getElementById('tab'+t[0].toUpperCase()+t.slice(1));
+    if (btn)  { btn.className='tab-btn'; if(t===tab) btn.classList.add('active-'+t); }
+  });
+  if (tab==='guild') renderGuildTab();
+  if (tab==='gxg' && gxgSub==='hp') renderHpRank();
+}
+
+// ═══════════════════════════════════════════════════
+// PVE
+// ═══════════════════════════════════════════════════
+function updateBoss() {
+  const b   = liveBoss;
+  const pct = b.max_hp>0?Math.max(0,Math.min(1,b.cur_hp/b.max_hp)):0;
+  document.getElementById('bossName').textContent    = b.name;
+  document.getElementById('bossHpText').textContent  = `${fmtNum(b.cur_hp)} / ${fmtNum(b.max_hp)}`;
+  document.getElementById('bossBarFill').style.width = (pct*100).toFixed(1)+'%';
+  document.getElementById('pveBadge').textContent    = fmtNum(b.cur_hp);
+  // Usa rows já com reset aplicado
+  const dmgRows  = _resetTime ? applyReset(liveRankDmg,  'dmg')  : liveRankDmg;
+  const recvRows = _resetTime ? applyReset(liveRankRecv, 'recv') : liveRankRecv;
+  const critRows = _resetTime ? applyReset(liveRankCrit, 'crit') : liveRankCrit;
+  const topDmg = dmgRows[0], focP = recvRows[0];
+  document.getElementById('bossTotalDmg').textContent = topDmg?.val||'—';
+  document.getElementById('bossTopDps').textContent   = '—';
+  document.getElementById('bossTopCrit').textContent  = critRows[0]?.val||'—';
+  if(topDmg){ document.getElementById('pveTopDmgName').textContent=topDmg.name; document.getElementById('pveTopDmgClass').textContent=`${topDmg.class_name} · ${topDmg.guild}`; document.getElementById('pveTopDmgVal').textContent=topDmg.val; }
+  if(focP)  { document.getElementById('pveFocusName').textContent=focP.name; document.getElementById('pveFocusClass').textContent=`${focP.class_name} · ${focP.guild}`; document.getElementById('pveFocusRecv').textContent=`${focP.val} recebido`; }
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+function init() {
+  try { switchTab('war'); } catch(e) { console.error('switchTab',e); }
+  try { updateWarTug(); } catch(e) { console.error('updateWarTug',e); }
+  try { buildFacClasses([],'warSentClasses','SENTINELAS'); } catch(e) { console.error('facSent',e); }
+  try { buildFacClasses([],'warLegClasses','LEGIÃO'); } catch(e) { console.error('facLeg',e); }
+  try { switchWarRank('dmg'); } catch(e) { console.error('switchWarRank',e); }
+  try { refreshGxgRank(); } catch(e) { console.error('refreshGxgRank',e); }
+  try { updateBoss(); } catch(e) { console.error('updateBoss',e); }
+  try { switchPveRank('dmg'); } catch(e) { console.error('switchPveRank',e); }
+  try { renderClassPicker(); } catch(e) { console.error('renderClassPicker',e); }
+
+  setInterval(() => {
+    const d=new Date();
+    document.getElementById('clock').textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  }, 1000);
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+
+
+<!-- Polling remoto: busca dados do Render quando aberto no navegador (sem pywebview) -->
+<script>
+(function() {
+  const REMOTE_URL = "https://servidorws.onrender.com/live";
+  const POLL_MS    = 1000;
+
+  // Só ativa se NÃO estiver rodando dentro do pywebview
+  if (window.pywebview) return;
+
+  let _noDataTimer = null;
+
+  function showOffline() {
+    const el = document.getElementById('_remote_status');
+    if (el) el.style.display = 'flex';
+  }
+
+  function hideOffline() {
+    const el = document.getElementById('_remote_status');
+    if (el) el.style.display = 'none';
+  }
+
+  // Cria banner de status
+  const banner = document.createElement('div');
+  banner.id = '_remote_status';
+  banner.style.cssText = [
+    'display:none','position:fixed','bottom:12px','left:50%',
+    'transform:translateX(-50%)','background:#1a0a0a','border:1px solid #e03050',
+    'color:#e03050','font-family:monospace','font-size:12px','padding:6px 16px',
+    'border-radius:4px','z-index:9999','pointer-events:none','letter-spacing:1px'
+  ].join(';');
+  banner.textContent = '⚠ Aguardando dados do tracker...';
+  document.body.appendChild(banner);
+
+  // Inicia polling
+  async function poll() {
+    try {
+      const r = await fetch(REMOTE_URL, { cache: 'no-store' });
+      if (r.status === 204) {
+        // Servidor online mas sem dados ainda
+        showOffline();
+      } else if (r.ok) {
+        const d = await r.json();
+        if (d.ok && d.snapshot) {
+          hideOffline();
+          clearTimeout(_noDataTimer);
+          if (typeof onPythonPush === 'function') onPythonPush(d.snapshot);
+        }
+      }
+    } catch(e) {
+      showOffline();
+    }
+  }
+
+  // Mostra banner se ficar 3s sem dado
+  _noDataTimer = setTimeout(showOffline, 3000);
+  poll();
+  setInterval(poll, POLL_MS);
+})();
+</script>
+</body>
+</html>
