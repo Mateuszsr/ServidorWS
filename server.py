@@ -3,14 +3,18 @@ Warspear Tracker - Servidor de Licenças
 Deploy no Render.com como Web Service (Python)
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import hashlib
 import hmac
 import json
 import os
 import base64
+import io
 
 app = Flask(__name__)
+
+# ── Estado ao vivo (em memória) ──
+_live_snapshot = None
 
 # ── Chave secreta do servidor (mude para algo aleatório seu) ──
 # No Render, defina como variável de ambiente: SERVER_SECRET
@@ -330,6 +334,40 @@ def auth():
 
     except Exception as e:
         return jsonify({"ok": False, "msg": str(e)}), 500
+
+
+@app.route("/update", methods=["POST"])
+def update():
+    """Recebe o snapshot ao vivo do tracker e armazena em memória."""
+    global _live_snapshot
+    try:
+        body       = request.get_json(force=True)
+        machine_id = body.get("machine_id", "").strip().upper()
+
+        if machine_id not in AUTHORIZED_MACHINES:
+            return jsonify({"ok": False, "msg": "Não autorizado"}), 403
+
+        _live_snapshot = body.get("snapshot")
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "msg": str(e)}), 500
+
+
+@app.route("/live", methods=["GET"])
+def live():
+    """Retorna o último snapshot recebido."""
+    if _live_snapshot is None:
+        return jsonify({"ok": False, "msg": "Nenhum dado ainda"}), 204
+    return jsonify({"ok": True, "snapshot": _live_snapshot})
+
+
+@app.route("/", methods=["GET"])
+def dashboard():
+    """Serve o dashboard HTML."""
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "warspear_dashboard.html")
+    if not os.path.exists(html_path):
+        return "Dashboard não encontrado.", 404
+    return send_file(html_path, mimetype="text/html")
 
 
 @app.route("/ping", methods=["GET"])
