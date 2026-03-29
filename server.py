@@ -32,8 +32,8 @@ AUTHORIZED_MACHINES = {
     "C7522236B60EBA94D3A8E4D0": "Miguel",
     #"AF71B8155321808DAAD1B956": "Datenshi",
     #"030B45B72576EF9327E48E35": "Sonno",
-    "9E07DC15033572B81CC9DBE0": "NSei",
-    #"F3097FAE45AA0010EE5276E7": "Miguel",
+    #"9E07DC15033572B81CC9DBE0": "Caio",
+    #"F3097FAE45AA0010EE5276E7": "Fogo",
 }
 
 # ── Endereços de memória + tabela de guilds (ficam APENAS no servidor) ──
