@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔ Arinar War Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg-void:    #07090f;
+    --bg-panel:   #0b0f1c;
+    --bg-card:    #0f1525;
+    --bg-hover:   #182035;
+    --border:     #1b2a44;
+    --border2:    #0e1828;
+    --gold:       #f5c842;
+    --gold2:      #c8960c;
+    --sent:       #00e5a0;
+    --legion:     #ff6a2a;
+    --text:       #ccd8f0;
+    --text-dim:   #2e4060;
+    --text-mid:   #5577aa;
+    --accent:     #e03050;
+    --accent2:    #ff4060;
+    --crit:       #ffdd44;
+    --boss-bar:   #9b59b6;
+    --pve-top:    #ff6b35;
+    --heal:       #3dd68c;
+    --dps-col:    #ff9944;
+    --p1:         #ff4444;
+    --p2:         #ffaa00;
+    --p3:         #44aaff;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg-void); color:var(--text); font-family:'Rajdhani',sans-serif; font-size:14px; min-height:100vh; overflow-x:hidden; }
+
+  /* ── HEADER ── */
+  .header { background:var(--bg-panel); border-bottom:1px solid var(--gold2); padding:8px 16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+  .header-title { font-family:'Orbitron',sans-serif; font-size:14px; font-weight:900; color:var(--gold); letter-spacing:2px; display:flex; align-items:center; gap:6px; }
+  .header-title span { color:var(--text-mid); font-weight:400; font-size:12px; }
+  .header-right { margin-left:auto; display:flex; align-items:center; gap:14px; font-size:12px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 6px var(--accent2); display:inline-block; animation:blink 1.5s infinite; }
+  .status-dot.online { background:var(--sent); box-shadow:0 0 6px var(--sent); animation:none; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* ── TABS ── */
+  .tab-nav { background:var(--bg-panel); display:flex; border-bottom:1px solid var(--border); padding:0 16px; }
+  .tab-btn { padding:10px 20px; font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; letter-spacing:1px; color:var(--text-dim); cursor:pointer; border:none; background:none; border-bottom:2px solid transparent; transition:all .2s; display:flex; align-items:center; gap:7px; }
+  .tab-btn:hover { color:var(--text-mid); }
+  .tab-btn.active-pve     { color:var(--boss-bar); border-bottom-color:var(--boss-bar); }
+  .tab-btn.active-players { color:var(--sent);     border-bottom-color:var(--sent); }
+  .tab-badge { background:var(--bg-card); padding:1px 6px; border-radius:4px; font-size:10px; font-family:'Share Tech Mono',monospace; }
+
+  /* ── PAGES ── */
+  .page { display:none; padding:12px 16px; }
+  .page.active { display:block; animation:fadeIn .2s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── ACTION BAR ── */
+  .action-bar { display:flex; gap:6px; justify-content:flex-end; margin-bottom:8px; }
+  .action-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-mid); padding:4px 12px; border-radius:3px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:600; transition:all .15s; display:flex; align-items:center; gap:5px; }
+  .action-btn:hover { color:var(--gold); border-color:var(--gold2); background:var(--bg-hover); }
+  .action-btn.danger:hover { color:var(--accent2); border-color:var(--accent); }
+
+  /* ── RANK ROWS ── */
+  .rank-row { display:flex; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border2); gap:8px; transition:background .1s; position:relative; overflow:hidden; }
+  .rank-row:last-child { border-bottom:none; }
+  .rank-row:hover { background:var(--bg-hover); }
+  .rank-bar-bg { position:absolute; left:0;top:0;bottom:0; pointer-events:none; opacity:.12; }
+  .rank-bar    { position:absolute; left:0;bottom:0; height:2px; transition:width .4s; opacity:.6; }
+  .rank-num { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; width:18px; text-align:center; color:var(--text-dim); flex-shrink:0; }
+  .rank-num.first  { color:var(--gold); }
+  .rank-num.second { color:#a8b4c8; }
+  .rank-num.third  { color:#c8845a; }
+  .rank-avatar { width:26px;height:26px;border-radius:3px;background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;border:1px solid var(--border); }
+  .rank-info { flex:1;min-width:0; }
+  .rank-name { font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .rank-sub  { font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace; }
+  .rank-val  { font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;text-align:right;flex-shrink:0; }
+  .rank-dps  { font-size:10px;color:var(--text-mid);font-family:'Share Tech Mono',monospace;text-align:right; }
+  .rank-list { max-height:320px;overflow-y:auto; }
+  .rank-list::-webkit-scrollbar { width:4px; }
+  .rank-list::-webkit-scrollbar-track { background:var(--bg-void); }
+  .rank-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+  .rank-section { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .rank-header { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); }
+  .rank-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .sub-tabs { display:flex; gap:4px; }
+  .sub-tab { font-size:10px; font-family:'Orbitron',sans-serif; padding:2px 8px; border-radius:2px; cursor:pointer; color:var(--text-dim); background:var(--bg-void); border:1px solid var(--border2); transition:all .15s; }
+  .sub-tab:hover { color:var(--text-mid); }
+  .sub-tab.active { color:var(--gold); background:#2e220866; border-color:var(--gold2); }
+
+  /* ─── PVE ─── */
+  .boss-section { background:var(--bg-card); border:1px solid var(--boss-bar); border-radius:4px; padding:10px 14px; margin-bottom:10px; position:relative; overflow:hidden; }
+  .boss-section::before { content:''; position:absolute;top:0;left:0;right:0;height:1px; background:linear-gradient(90deg,transparent,var(--boss-bar),transparent); }
+  .boss-name-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .boss-name { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; color:var(--boss-bar); display:flex; align-items:center; gap:7px; }
+  .boss-hp-text { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text-mid); }
+  .boss-bar-track { width:100%; height:10px; background:var(--bg-void); border:1px solid var(--border); border-radius:2px; overflow:hidden; margin-bottom:8px; }
+  .boss-bar-fill  { height:100%; background:linear-gradient(90deg,#5e1a7a,var(--boss-bar)); border-radius:2px; transition:width .5s ease; }
+  .boss-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .boss-stat { background:var(--bg-panel); border:1px solid var(--border); border-radius:3px; padding:5px 8px; text-align:center; }
+  .boss-stat-val { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; }
+  .boss-stat-lbl { font-size:9px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; margin-top:1px; }
+
+  /* Boss focus */
+  .boss-focus-wrap { background:var(--bg-card); border:1px solid var(--accent2); border-radius:4px; padding:10px 14px; margin-bottom:10px; position:relative; overflow:hidden; }
+  .boss-focus-wrap::before { content:''; position:absolute;top:0;left:0;right:0;height:1px; background:linear-gradient(90deg,transparent,var(--accent2),transparent); }
+  .boss-focus-pulse { position:absolute;right:0;top:0;bottom:0;width:3px;background:var(--accent2);animation:blink 1s infinite; }
+  .boss-focus-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .boss-focus-title { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; color:var(--accent2); letter-spacing:1px; }
+  .boss-focus-addr  { margin-left:auto; font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text-dim); }
+  .boss-focus-live  { width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 5px var(--accent2); animation:blink 1s infinite; flex-shrink:0; }
+  .boss-focus-body  { display:flex; align-items:center; gap:12px; }
+  .boss-focus-icon  { font-size:24px; }
+  .boss-focus-info  { flex:1; min-width:0; }
+  .boss-focus-label { font-family:'Orbitron',sans-serif; font-size:9px; color:var(--text-dim); letter-spacing:1.5px; margin-bottom:3px; }
+  .boss-focus-name  { font-size:17px; font-weight:700; color:var(--accent2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .boss-focus-sub   { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; margin-top:2px; }
+  .boss-focus-right { text-align:right; flex-shrink:0; }
+  .boss-focus-recv  { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:900; color:var(--accent2); }
+  .boss-focus-badge { background:var(--accent); color:white; font-size:9px; font-family:'Orbitron',sans-serif; padding:2px 7px; border-radius:2px; display:inline-block; margin-top:4px; animation:blink 1.2s infinite; }
+  .boss-focus-history { margin-top:8px; padding-top:8px; border-top:1px solid var(--border2); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .focus-hist-label { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text-dim); flex-shrink:0; }
+  .focus-hist-chip  { background:var(--bg-panel); border:1px solid var(--border2); border-radius:3px; padding:2px 8px; font-size:10px; font-family:'Share Tech Mono',monospace; color:var(--text-mid); }
+  .focus-hist-chip.recent { border-color:var(--accent); color:var(--accent2); font-weight:600; }
+
+  /* Spotlights */
+  .pve-spotlights { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .spot-card { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; padding:10px 12px; position:relative; overflow:hidden; }
+  .spot-card::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; }
+  .spot-dps::before  { background:var(--dps-col); }
+  .spot-dmg::before  { background:var(--pve-top); }
+  .spot-recv::before { background:var(--accent2); }
+  .spot-crit::before { background:var(--crit); }
+  .spot-heal::before { background:var(--heal); }
+  .spot-label { font-family:'Orbitron',sans-serif; font-size:9px; color:var(--text-dim); letter-spacing:1px; margin-bottom:5px; }
+  .spot-name  { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .spot-class { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; margin-top:2px; }
+  .spot-val   { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:900; margin-top:6px; }
+  .spot-sub   { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; margin-top:1px; }
+  .spot-heal-inner { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; align-items:start; }
+  .spot-heal-stat { background:var(--bg-panel); border:1px solid var(--border); border-radius:3px; padding:7px 8px; text-align:center; }
+  .spot-heal-stat-lbl { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text-dim); margin-bottom:3px; }
+  .spot-heal-stat-val { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; color:var(--heal); }
+  .spot-pending { font-size:9px; background:rgba(61,214,140,.08); border:1px solid #3dd68c33; color:#3dd68c77; padding:1px 7px; border-radius:2px; font-family:'Orbitron',sans-serif; margin-left:6px; }
+
+  /* ─── PLAYERS TAB ─── */
+  .players-summary { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; padding:10px 14px; margin-bottom:10px; display:grid; grid-template-columns:1fr auto auto auto; gap:16px; align-items:center; }
+  .players-total-label { font-family:'Orbitron',sans-serif; font-size:9px; color:var(--text-dim); letter-spacing:1px; margin-bottom:4px; }
+  .players-total-val   { font-family:'Orbitron',sans-serif; font-size:28px; font-weight:900; color:var(--sent); }
+  .players-stat-box { text-align:center; background:var(--bg-panel); border:1px solid var(--border); border-radius:3px; padding:6px 16px; }
+  .players-stat-label { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text-dim); margin-bottom:3px; display:flex; align-items:center; gap:4px; }
+  .players-stat-val   { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:900; }
+
+  /* Class group */
+  .class-group { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:6px; }
+  .class-group-header { display:flex; align-items:center; justify-content:space-between; padding:5px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border2); cursor:pointer; user-select:none; transition:background .1s; }
+  .class-group-header:hover { background:var(--bg-hover); }
+  .class-group-name-row { display:flex; align-items:center; gap:8px; }
+  .class-group-icon { width:24px; height:24px; border-radius:3px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; font-family:'Share Tech Mono',monospace; font-size:10px; font-weight:700; border:1px solid var(--border); flex-shrink:0; }
+  .class-group-name { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; }
+  .class-group-count { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text-mid); }
+  .class-group-vivos { font-family:'Share Tech Mono',monospace; font-size:10px; }
+  .cg-vivos-val { font-weight:700; }
+
+  /* Player row inside class group */
+  .player-row { display:flex; align-items:center; gap:10px; padding:6px 12px; border-bottom:1px solid var(--border2); position:relative; overflow:hidden; }
+  .player-row:last-child { border-bottom:none; }
+  .player-row:hover { background:var(--bg-hover); }
+  .player-hp-bg { position:absolute; left:0;top:0;bottom:0; pointer-events:none; opacity:.08; transition:width .5s; }
+  .player-hp-bar { position:absolute; left:0;bottom:0; height:3px; opacity:.8; transition:width .5s; }
+  .player-avatar { width:26px; height:26px; border-radius:3px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; font-family:'Share Tech Mono',monospace; font-size:10px; font-weight:700; flex-shrink:0; border:1px solid var(--border); }
+  .player-info { flex:1; min-width:0; }
+  .player-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .player-guild { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .player-hp-right { text-align:right; flex-shrink:0; min-width:90px; }
+  .player-hp-pct  { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; }
+  .player-hp-nums { font-size:9px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .dead-badge { background:rgba(224,48,80,.15); color:var(--accent2); font-size:8px; font-family:'Orbitron',sans-serif; padding:2px 6px; border-radius:2px; flex-shrink:0; white-space:nowrap; letter-spacing:0.5px; }
+
+  /* Colors */
+  .col-boss   { color:var(--boss-bar); }
+  .col-pvetop { color:var(--pve-top); }
+  .col-crit   { color:var(--crit); }
+  .col-accent2{ color:var(--accent2); }
+  .col-heal   { color:var(--heal); }
+  .col-dps    { color:var(--dps-col); }
+  .col-sent   { color:var(--sent); }
+  .col-gold   { color:var(--gold); }
+
+  .footer { background:var(--bg-panel); border-top:1px solid var(--border); padding:4px 16px; display:flex; justify-content:space-between; align-items:center; font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text-dim); position:sticky; bottom:0; }
+
+  @media (max-width:600px) {
+    .pve-spotlights { grid-template-columns:1fr; }
+    .boss-stats { grid-template-columns:1fr 1fr; }
+    .players-summary { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">⚔ ARINAR <span>WAR DASHBOARD</span></div>
+  <div class="header-right">
+    <span id="clock">00:00:00</span>
+    <span id="cycleLabel" style="font-size:10px;">0ms</span>
+    <span><span class="status-dot" id="statusDot"></span> <span id="statusText">OFFLINE</span></span>
+  </div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active-pve" id="tabPve"     onclick="switchTab('pve')">💀 PVE <span class="tab-badge col-boss" id="pveBadge">BOSS</span></button>
+  <button class="tab-btn"            id="tabPlayers" onclick="switchTab('players')">👥 PLAYERS <span class="tab-badge col-sent" id="playersBadge">0</span></button>
+</div>
+
+<!-- ══════════ PVE ══════════ -->
+<div class="page active" id="pagePve">
+  <div class="action-bar">
+    <button class="action-btn" onclick="saveTab('pve')">💾 Salvar TXT</button>
+    <button class="action-btn danger" onclick="resetPve()">↺ Reset</button>
+  </div>
+
+  <!-- BOSS HP -->
+  <div class="boss-section">
+    <div class="boss-name-row">
+      <div class="boss-name">
+        <span>💀</span>
+        <span id="bossName">Aguardando boss...</span>
+        <span id="bossPhaseChip" style="display:none;font-size:10px;background:rgba(155,89,182,.2);border:1px solid var(--boss-bar);padding:1px 8px;border-radius:3px;color:var(--boss-bar);margin-left:4px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:10px;"></span>
+      </div>
+      <span class="boss-hp-text" id="bossHpText">—</span>
+    </div>
+    <div class="boss-bar-track"><div class="boss-bar-fill" id="bossBarFill" style="width:100%"></div></div>
+    <div class="boss-stats">
+      <div class="boss-stat"><div class="boss-stat-val col-pvetop" id="bossTotalDmg">—</div><div class="boss-stat-lbl">DANO TOTAL</div></div>
+      <div class="boss-stat"><div class="boss-stat-val col-dps"    id="bossTopDps">—</div><div class="boss-stat-lbl">TOP DPS</div></div>
+      <div class="boss-stat"><div class="boss-stat-val col-crit"   id="bossTopCrit">—</div><div class="boss-stat-lbl">MAIOR CRÍTICO</div></div>
+      <div class="boss-stat"><div class="boss-stat-val col-heal"   id="bossTotalHeal">—</div><div class="boss-stat-lbl">CURA TOTAL</div></div>
+    </div>
+  </div>
+
+  <!-- ALVO DO BOSS -->
+  <div class="boss-focus-wrap">
+    <div class="boss-focus-pulse"></div>
+    <div class="boss-focus-header">
+      <div class="boss-focus-live"></div>
+      <div class="boss-focus-title">🎯 ALVO DO BOSS</div>
+      <div class="boss-focus-addr" id="bossFocusAddr">addr: monitorando...</div>
+    </div>
+    <div class="boss-focus-body">
+      <div class="boss-focus-icon">☠</div>
+      <div class="boss-focus-info">
+        <div class="boss-focus-label">PLAYER SENDO ATACADO AGORA</div>
+        <div class="boss-focus-name" id="pveFocusName">Aguardando...</div>
+        <div class="boss-focus-sub"  id="pveFocusClass">Classe · Guilda</div>
+      </div>
+      <div class="boss-focus-right">
+        <div class="boss-focus-recv" id="pveFocusRecv">—</div>
+        <div class="boss-focus-badge">ALVO ATIVO</div>
+      </div>
+    </div>
+    <div class="boss-focus-history" id="bossFocusHistory">
+      <span class="focus-hist-label">histórico:</span>
+      <span style="font-size:9px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;">aguardando dados...</span>
+    </div>
+  </div>
+
+  <!-- SPOTLIGHTS 2x2 -->
+  <div class="pve-spotlights">
+    <div class="spot-card spot-dps">
+      <div class="spot-label">⚡ MAIOR DPS</div>
+      <div class="spot-name col-dps" id="spotDpsName">—</div>
+      <div class="spot-class"       id="spotDpsClass">Aguardando...</div>
+      <div class="spot-val  col-dps" id="spotDpsVal">—</div>
+      <div class="spot-sub"          id="spotDpsSub">por segundo</div>
+    </div>
+    <div class="spot-card spot-dmg">
+      <div class="spot-label">🔥 MAIS DANO TOTAL</div>
+      <div class="spot-name col-pvetop" id="spotDmgName">—</div>
+      <div class="spot-class"          id="spotDmgClass">Aguardando...</div>
+      <div class="spot-val  col-pvetop" id="spotDmgVal">—</div>
+      <div class="spot-sub"             id="spotDmgSub">—</div>
+    </div>
+    <div class="spot-card spot-recv">
+      <div class="spot-label">🛡 MAIS DANO RECEBIDO</div>
+      <div class="spot-name col-accent2" id="spotRecvName">—</div>
+      <div class="spot-class"           id="spotRecvClass">Aguardando...</div>
+      <div class="spot-val  col-accent2" id="spotRecvVal">—</div>
+      <div class="spot-sub">recebido no total</div>
+    </div>
+    <div class="spot-card spot-crit">
+      <div class="spot-label">💥 CRÍTICO MAIS FORTE</div>
+      <div class="spot-name col-crit" id="spotCritName">—</div>
+      <div class="spot-class"        id="spotCritClass">Aguardando...</div>
+      <div class="spot-val  col-crit" id="spotCritVal">—</div>
+      <div class="spot-sub">maior hit único</div>
+    </div>
+
+    <!-- HEAL — largura total -->
+    <div class="spot-card spot-heal" style="grid-column:1/-1">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <div class="spot-label" style="margin:0;">💚 MAIOR CURADOR</div>
+        <span class="spot-pending">ENDEREÇO PENDENTE</span>
+      </div>
+      <div class="spot-heal-inner">
+        <div>
+          <div class="spot-name col-heal" id="spotHealName">—</div>
+          <div class="spot-class"        id="spotHealClass">Aguardando endereço...</div>
+          <div class="spot-val  col-heal" id="spotHealVal">—</div>
+        </div>
+        <div class="spot-heal-stat">
+          <div class="spot-heal-stat-lbl">CURA / SEGUNDO</div>
+          <div class="spot-heal-stat-val" id="spotHealDps">—</div>
+        </div>
+        <div class="spot-heal-stat">
+          <div class="spot-heal-stat-lbl">CURA TOTAL RAID</div>
+          <div class="spot-heal-stat-val" id="spotHealTotal">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="rank-section">
+    <div class="rank-header">
+      <div class="rank-title col-boss">⚡ RANKING PVE</div>
+      <div class="sub-tabs">
+        <div class="sub-tab active" id="pveTabDmg"  onclick="switchPveRank('dmg')">DANO</div>
+        <div class="sub-tab"        id="pveTabDps"  onclick="switchPveRank('dps')">DPS</div>
+        <div class="sub-tab"        id="pveTabRecv" onclick="switchPveRank('recv')">RECEBIDO</div>
+        <div class="sub-tab"        id="pveTabCrit" onclick="switchPveRank('crit')">CRÍTICO</div>
+        <div class="sub-tab"        id="pveTabHeal" onclick="switchPveRank('heal')" style="color:#3dd68c55;">CURA 💚</div>
+      </div>
+    </div>
+    <div class="rank-list" id="pveRankList"></div>
+  </div>
+</div>
+
+<!-- ══════════ PLAYERS ══════════ -->
+<div class="page" id="pagePlayers">
+  <!-- Summary bar -->
+  <div class="players-summary">
+    <div>
+      <div class="players-total-label">PLAYERS NA ÁREA</div>
+      <div class="players-total-val" id="playersTotal">0</div>
+    </div>
+    <div class="players-stat-box">
+      <div class="players-stat-label"><span style="color:var(--sent)">●</span> VIVOS</div>
+      <div class="players-stat-val col-sent" id="playersVivos">0</div>
+    </div>
+    <div class="players-stat-box">
+      <div class="players-stat-label"><span style="color:var(--accent2)">●</span> MORTOS</div>
+      <div class="players-stat-val col-accent2" id="playersMortos">0</div>
+    </div>
+    <div class="players-stat-box">
+      <div class="players-stat-label">💀 MORTES TOTAL</div>
+      <div class="players-stat-val col-gold" id="playersMortesTotal">0</div>
+    </div>
+  </div>
+
+  <!-- Class groups — rendered by JS -->
+  <div id="classGroupsContainer"></div>
+</div>
+
+<div class="footer">
+  <span>⚔ Arinar Tracker PVE</span>
+  <span id="footerRight"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const CLASS_ICON = {1:"PA",2:"SA",3:"MG",7:"BD",13:"SK",8:"RG",9:"DR",15:"WD",19:"BM",17:"TM",4:"BR",5:"RO",6:"SH",10:"DK",12:"WL",11:"NC",14:"HU",18:"CC",16:"CH",20:"RP"};
+const CLASS_NAME = {1:"Paladino",2:"Sacerdote",3:"Mago",7:"Bladedancer",13:"Seeker",8:"Ranger",9:"Druida",15:"Warden",19:"Beastmaster",17:"Templário",4:"Barbarian",5:"Rogue",6:"Shaman",10:"Deathknight",12:"Warlock",11:"Necromancer",14:"Hunter",18:"Cacique",16:"Charmer",20:"Reaper"};
+// Cor de cada classe
+const CLASS_COLOR = {1:"#4fa3e0",2:"#3dd68c",3:"#c97de8",7:"#00e5a0",13:"#00e5a0",8:"#00e5a0",9:"#00e5a0",15:"#00e5a0",19:"#00e5a0",17:"#00e5a0",4:"#ff6a2a",5:"#ff6a2a",6:"#ff6a2a",10:"#ff6a2a",12:"#ff6a2a",11:"#ff6a2a",14:"#ff6a2a",18:"#ff6a2a",16:"#ff6a2a",20:"#ff6a2a"};
+
+const fmtNum = n => n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':String(Math.round(n));
+function parseVal(v){ if(!v)return 0; v=String(v).trim(); if(v.endsWith('M'))return parseFloat(v)*1e6; if(v.endsWith('k'))return parseFloat(v)*1e3; return parseFloat(v)||0; }
+const rankCls = r => r===1?'first':r===2?'second':r===3?'third':'';
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let currentTab  = 'pve';
+let pveRankTab  = 'dmg';
+
+let liveAll      = [];
+let liveRankDmg  = [];
+let liveRankRecv = [];
+let liveRankCrit = [];
+let liveRankDps  = [];
+let liveRankHeal = [];
+let liveBoss     = {name:'—', cur_hp:0, max_hp:1, focus_target:null, focus_addr:null};
+
+let _pveFocusHistory = [];
+let _pveFocusLast    = '';
+
+// Registro persistente de players mortos: { name: { ...dadosDoPlayer } }
+let _deadPlayers = {};
+
+// Reset snapshot
+let _resetSnap = {}, _resetCritSnap = {}, _resetTime = 0;
+
+// ═══════════════════════════════════════════════════
+// PUSH DATA
+// ═══════════════════════════════════════════════════
+function onPythonPush(data) {
+  const incoming = data.entities || [];
+
+  // Monta mapa dos players recebidos agora (por nome)
+  const incomingMap = {};
+  incoming.forEach(p => { incomingMap[p.name] = p; });
+
+  // Detecta novos mortos: player que estava vivo (ou era desconhecido) e agora tem cur_hp=0
+  incoming.forEach(p => {
+    if (!p.alive || p.cur_hp === 0) {
+      // Morreu — registra/mantém no mapa de mortos
+      if (!_deadPlayers[p.name]) {
+        _deadPlayers[p.name] = { ...p, alive: false, cur_hp: 0 };
+      }
+    } else {
+      // Voltou com vida — remove do mapa de mortos
+      delete _deadPlayers[p.name];
+    }
+  });
+
+  // Monta liveAll: players vivos do scan + mortos persistentes não presentes no scan
+  const vivosList = incoming.filter(p => p.alive && p.cur_hp > 0);
+  const mortosPersistentes = Object.values(_deadPlayers);
+
+  liveAll = [
+    ...vivosList,
+    ...mortosPersistentes,
+  ];
+
+  liveRankDmg  = data.rows_dmg  || [];
+  liveRankRecv = data.rows_recv || [];
+  liveRankCrit = data.rows_crit || [];
+  liveRankDps  = data.rows_dps  || [];
+  liveRankHeal = data.rows_heal || [];
+  if (data.bosses && data.bosses.length > 0) {
+    const b = data.bosses[0];
+    liveBoss = { name:b.name, cur_hp:b.cur_hp, max_hp:b.max_hp, focus_target:b.focus_target||null, focus_addr:b.focus_addr||null };
+  }
+  document.getElementById('clock').textContent    = data.ts || '--:--:--';
+  document.getElementById('footerRight').textContent = `cycle: ${data.cycle_ms||0}ms`;
+  document.getElementById('playersBadge').textContent = liveAll.length;
+  document.getElementById('playersTotal').textContent = liveAll.length;
+  const vivos  = liveAll.filter(p=>p.alive).length;
+  const mortos = liveAll.length - vivos;
+  const deaths = liveAll.reduce((s,p)=>s+(p.deaths||0),0);
+  document.getElementById('playersVivos').textContent       = vivos;
+  document.getElementById('playersMortos').textContent      = mortos;
+  document.getElementById('playersMortesTotal').textContent = deaths;
+  document.getElementById('pveBadge').textContent = fmtNum(liveBoss.cur_hp||0);
+
+  // Status dot
+  document.getElementById('statusDot').classList.add('online');
+  document.getElementById('statusText').textContent = 'ONLINE';
+
+  if (currentTab === 'pve')     { updateBoss(); renderPveRank(); }
+  if (currentTab === 'players') { renderPlayers(); }
+}
+
+// ═══════════════════════════════════════════════════
+// BOSS FOCUS HISTORY
+// ═══════════════════════════════════════════════════
+function _updateFocusHistory(name) {
+  if (!name || name === '—') return;
+  if (name === _pveFocusLast) return;
+  _pveFocusLast = name;
+  const now = new Date();
+  const ts  = [now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  _pveFocusHistory.unshift({name,ts});
+  if (_pveFocusHistory.length > 5) _pveFocusHistory.pop();
+  _renderFocusHistory();
+}
+function _renderFocusHistory() {
+  const c = document.getElementById('bossFocusHistory');
+  if (!c || !_pveFocusHistory.length) return;
+  c.innerHTML = '<span class="focus-hist-label">histórico:</span>';
+  _pveFocusHistory.forEach((h,i) => {
+    const chip = document.createElement('span');
+    chip.className = 'focus-hist-chip' + (i===0?' recent':'');
+    chip.textContent = `${h.name} (${h.ts})`;
+    c.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// BOSS UPDATE
+// ═══════════════════════════════════════════════════
+function updateBoss() {
+  const b   = liveBoss;
+  const pct = b.max_hp>0?Math.max(0,Math.min(1,b.cur_hp/b.max_hp)):0;
+  document.getElementById('bossName').textContent    = b.name;
+  document.getElementById('bossHpText').textContent  = `${fmtNum(b.cur_hp)} / ${fmtNum(b.max_hp)}`;
+  document.getElementById('bossBarFill').style.width = (pct*100).toFixed(1)+'%';
+
+  // Fase
+  const phChip = document.getElementById('bossPhaseChip');
+  if (b.max_hp > 0) {
+    phChip.style.display = '';
+    const hp = pct*100;
+    if      (hp>66) { phChip.textContent='FASE 1'; phChip.style.color='var(--boss-bar)'; phChip.style.borderColor='var(--boss-bar)'; }
+    else if (hp>33) { phChip.textContent='FASE 2'; phChip.style.color='var(--gold)';     phChip.style.borderColor='var(--gold2)'; }
+    else            { phChip.textContent='FASE 3 ⚠'; phChip.style.color='var(--accent2)';phChip.style.borderColor='var(--accent)'; }
+  } else { phChip.style.display='none'; }
+
+  const dmgR  = liveRankDmg;
+  const recvR = liveRankRecv;
+  const critR = liveRankCrit;
+  const dpsR  = liveRankDps;
+  const healR = liveRankHeal;
+
+  // Focus target
+  const focName = b.focus_target || recvR[0]?.name || '—';
+  const focRow  = recvR.find(r=>r.name===focName) || recvR[0];
+  _updateFocusHistory(focName);
+  document.getElementById('pveFocusName').textContent  = focName;
+  document.getElementById('pveFocusClass').textContent = focRow?`${focRow.class_name} · ${focRow.guild}`:'Aguardando...';
+  document.getElementById('pveFocusRecv').textContent  = focRow?.val||'—';
+  document.getElementById('bossFocusAddr').textContent = b.focus_addr?`addr: ${b.focus_addr}`:'addr: monitorando...';
+
+  // Spotlights
+  _spot('spotDpsName','spotDpsClass','spotDpsVal', dpsR[0]||dmgR[0], 'col-dps');
+  const dpsSub = document.getElementById('spotDpsSub');
+  if (dpsSub) dpsSub.textContent = (dpsR[0]||dmgR[0])?.dps ? (dpsR[0]||dmgR[0]).dps+'/s' : 'por segundo';
+
+  _spot('spotDmgName','spotDmgClass','spotDmgVal', dmgR[0], 'col-pvetop');
+  const dmgSub = document.getElementById('spotDmgSub');
+  if (dmgSub) dmgSub.textContent = dmgR[0]?.pct || '— do dano total';
+
+  _spot('spotRecvName','spotRecvClass','spotRecvVal', recvR[0], 'col-accent2');
+  _spot('spotCritName','spotCritClass','spotCritVal', critR[0], 'col-crit');
+  _spot('spotHealName','spotHealClass','spotHealVal', healR[0], 'col-heal');
+
+  // Boss stats bar
+  document.getElementById('bossTotalDmg').textContent  = dmgR[0]?.val  || '—';
+  document.getElementById('bossTopDps').textContent    = dpsR[0]?.val  ? dpsR[0].val+'/s' : (dmgR[0]?.val||'—');
+  document.getElementById('bossTopCrit').textContent   = critR[0]?.val || '—';
+  const totalHeal = healR.reduce((s,r)=>s+parseVal(r.val),0);
+  const healStr   = totalHeal > 0 ? fmtNum(totalHeal) : '—';
+  document.getElementById('bossTotalHeal').textContent = healStr;
+  document.getElementById('spotHealDps').textContent   = healR[0]?.dps ? healR[0].dps+'/s' : '—';
+  document.getElementById('spotHealTotal').textContent = healStr;
+}
+function _spot(nid,cid,vid,row,cls) {
+  document.getElementById(nid).textContent = row?.name||'—';
+  document.getElementById(cid).textContent = row?`${row.class_name} · ${row.guild}`:'Aguardando...';
+  document.getElementById(vid).textContent = row?.val||'—';
+}
+
+// ═══════════════════════════════════════════════════
+// PVE RANK
+// ═══════════════════════════════════════════════════
+function switchPveRank(tab) {
+  pveRankTab = tab;
+  ['Dmg','Dps','Recv','Crit','Heal'].forEach(t=>{
+    const el=document.getElementById('pveTab'+t);
+    if(el) el.classList.toggle('active', tab===t.toLowerCase());
+  });
+  renderPveRank();
+}
+function renderPveRank() {
+  let rows, color;
+  if      (pveRankTab==='dmg')  { rows=liveRankDmg;  color='var(--pve-top)'; }
+  else if (pveRankTab==='dps')  { rows=liveRankDps;  color='var(--dps-col,#ff9944)'; }
+  else if (pveRankTab==='recv') { rows=liveRankRecv; color='var(--accent2)'; }
+  else if (pveRankTab==='crit') { rows=liveRankCrit; color='var(--crit)'; }
+  else if (pveRankTab==='heal') { rows=liveRankHeal; color='#3dd68c'; }
+  else                          { rows=[];            color='var(--pve-top)'; }
+  renderRowsToList(rows,'pveRankList',color);
+}
+function renderRowsToList(rows, containerId, accentColor) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  if (!rows.length) {
+    c.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;font-size:11px;">Sem dados ainda.</div>';
+    return;
+  }
+  c.innerHTML='';
+  rows.forEach(r => {
+    const pct = (r.bar_pct||0).toFixed(1);
+    const row = document.createElement('div');
+    row.className='rank-row';
+    row.innerHTML=`
+      <div class="rank-bar-bg" style="width:${pct}%;background:${accentColor}"></div>
+      <div class="rank-bar"    style="width:${pct}%;background:${accentColor}"></div>
+      <div class="rank-num ${rankCls(r.rank)}">${r.rank}</div>
+      <div class="rank-avatar" style="color:${CLASS_COLOR[r.class_id]||'var(--text-mid)'};">${CLASS_ICON[r.class_id]||'?'}</div>
+      <div class="rank-info">
+        <div class="rank-name">${r.name}</div>
+        <div class="rank-sub">${r.class_name} · ${r.guild}</div>
+      </div>
+      <div>
+        <div class="rank-val" style="color:${accentColor}">${r.val}</div>
+        ${r.pct?`<div class="rank-dps">${r.pct}</div>`:''}
+      </div>`;
+    c.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// PLAYERS TAB
+// ═══════════════════════════════════════════════════
+let _classGroupOpen = {}; // { classId: bool }
+
+function renderPlayers() {
+  const container = document.getElementById('classGroupsContainer');
+
+  // Group by class
+  const byClass = {};
+  liveAll.forEach(p => {
+    if (!byClass[p.class_id]) byClass[p.class_id] = [];
+    byClass[p.class_id].push(p);
+  });
+
+  // Sort classes by count desc
+  const classIds = Object.keys(byClass).sort((a,b)=>byClass[b].length-byClass[a].length);
+
+  container.innerHTML = '';
+  classIds.forEach(cid => {
+    const players = byClass[cid];
+    const className = CLASS_NAME[cid] || 'Classe ?';
+    const icon      = CLASS_ICON[cid] || '?';
+    const color     = CLASS_COLOR[cid] || 'var(--text-mid)';
+    const vivos     = players.filter(p=>p.alive).length;
+    const isOpen    = _classGroupOpen[cid] !== false; // default open
+
+    const group = document.createElement('div');
+    group.className = 'class-group';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'class-group-header';
+    header.innerHTML = `
+      <div class="class-group-name-row">
+        <div class="class-group-icon" style="color:${color};border-color:${color}44;">${icon}</div>
+        <div class="class-group-name" style="color:${color}">${className}</div>
+        <div class="class-group-count" style="margin-left:8px;">${players.length} vivos / ${vivos}</div>
+      </div>
+      <div class="class-group-vivos">
+        <span class="cg-vivos-val" style="color:${color}">${vivos}</span>
+        <span style="color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:9px;margin-left:4px;">/ ${players.length}</span>
+        <span style="margin-left:8px;color:var(--text-dim);">${isOpen?'▲':'▼'}</span>
+      </div>`;
+    header.onclick = () => {
+      _classGroupOpen[cid] = !(_classGroupOpen[cid] !== false);
+      renderPlayers();
+    };
+
+    // Body
+    const body = document.createElement('div');
+    if (isOpen) {
+      players.sort((a,b) => {
+        // alive first, then sort by hp% desc
+        if (a.alive !== b.alive) return b.alive-a.alive;
+        const pctA = a.max_hp>0?a.cur_hp/a.max_hp:0;
+        const pctB = b.max_hp>0?b.cur_hp/b.max_hp:0;
+        return pctB-pctA;
+      });
+      players.forEach(p => {
+        const hpPct  = p.max_hp>0 ? Math.max(0,Math.min(1,p.cur_hp/p.max_hp)) : 0;
+        const hpPctN = (hpPct*100).toFixed(0);
+        const hpColor = hpPct>0.6?'var(--sent)':hpPct>0.3?'var(--gold)':'var(--accent2)';
+        const prow = document.createElement('div');
+        prow.className = 'player-row';
+        prow.innerHTML = `
+          <div class="player-hp-bg"  style="width:${hpPctN}%;background:${hpColor}"></div>
+          <div class="player-hp-bar" style="width:${hpPctN}%;background:${hpColor}"></div>
+          <div class="player-avatar" style="color:${color};border-color:${color}44;">${icon}</div>
+          <div class="player-info">
+            <div class="player-name" style="${!p.alive?'color:var(--text-dim);text-decoration:line-through;':''}">${p.name}</div>
+            <div class="player-guild">${p.guild||'—'}</div>
+          </div>
+          ${!p.alive
+            ? '<span class="dead-badge">MORREU E AINDA NÃO RETORNOU</span>'
+            : `<div class="player-hp-right">
+                <div class="player-hp-pct" style="color:${hpColor}">${hpPctN}%</div>
+                <div class="player-hp-nums">${fmtNum(p.cur_hp)} / ${fmtNum(p.max_hp)}</div>
+               </div>`
+          }`;
+        body.appendChild(prow);
+      });
+    }
+
+    group.appendChild(header);
+    group.appendChild(body);
+    container.appendChild(group);
+  });
+
+  if (!classIds.length) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;font-size:11px;">Nenhum player detectado.</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// TAB SWITCH
+// ═══════════════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+  ['pve','players'].forEach(t => {
+    document.getElementById('page'+t[0].toUpperCase()+t.slice(1)).classList.toggle('active', t===tab);
+    const btn = document.getElementById('tab'+t[0].toUpperCase()+t.slice(1));
+    if (btn) { btn.className='tab-btn'; if(t===tab) btn.classList.add('active-'+t); }
+  });
+  if (tab==='pve')     { updateBoss(); renderPveRank(); }
+  if (tab==='players') renderPlayers();
+}
+
+// ═══════════════════════════════════════════════════
+// RESET / SAVE
+// ═══════════════════════════════════════════════════
+function resetPve() {
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.reset_damage) {
+    try { window.pywebview.api.reset_damage(); } catch(e){}
+  }
+  liveRankDmg=[]; liveRankRecv=[]; liveRankCrit=[]; liveRankDps=[]; liveRankHeal=[];
+  _pveFocusHistory=[]; _pveFocusLast='';
+  _deadPlayers = {};
+  updateBoss(); renderPveRank();
+}
+async function saveTab(tab) {
+  let lines = [];
+  const ts = document.getElementById('clock').textContent;
+  lines.push(`⚔ Arinar Tracker — ${tab.toUpperCase()} — ${ts}`);
+  lines.push('='.repeat(50));
+  if (tab==='pve') {
+    liveRankDmg.forEach(r=>lines.push(`${String(r.rank).padStart(2)}. ${r.name.padEnd(20)} [${r.class_name}]  ${r.val}`));
+  }
+  const text = lines.join('\n');
+  const filename = `arinar_${tab}_${ts.replace(/:/g,'')}.txt`;
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_file) {
+    try { await window.pywebview.api.save_file(filename, text); return; } catch(e){}
+  }
+  const blob = new Blob([text],{type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+}
+
+// ═══════════════════════════════════════════════════
+// INIT + CLOCK
+// ═══════════════════════════════════════════════════
+function init() {
+  setInterval(()=>{
+    const d=new Date();
+    document.getElementById('clock').textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  },1000);
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+
+<!-- Remote polling sem demo -->
+<script>
+(function(){
+  const REMOTE_URL = "https://servidorws.onrender.com/live";
+  const POLL_MS    = 1000;
+  if (window.pywebview) return;
+
+  const banner = document.createElement('div');
+  banner.id = '_remote_status';
+  banner.style.cssText = 'display:none;position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#1a0a0a;border:1px solid #e03050;color:#e03050;font-family:monospace;font-size:12px;padding:6px 16px;border-radius:4px;z-index:9999;pointer-events:none;letter-spacing:1px';
+  banner.textContent = '⚠ Aguardando dados do tracker...';
+  document.body.appendChild(banner);
+
+  async function poll() {
+    try {
+      const r = await fetch(REMOTE_URL, {cache:'no-store'});
+      if (r.status===204) {
+        banner.style.display='flex';
+      } else if (r.ok) {
+        const d = await r.json();
+        if (d.ok && d.snapshot) {
+          banner.style.display='none';
+          if (typeof onPythonPush==='function') onPythonPush(d.snapshot);
+        }
+      }
+    } catch(e) { banner.style.display='flex'; }
+  }
+
+  // Primeira poll imediata
+  poll();
+  setInterval(poll, POLL_MS);
+})();
+</script>
+</body>
+</html>
