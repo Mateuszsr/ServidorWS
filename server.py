@@ -14,7 +14,8 @@ import io
 app = Flask(__name__)
 
 # ── Estado ao vivo (em memória) ──
-_live_snapshot = None
+_live_snapshot  = None
+_reset_pending  = False   # True enquanto o reset não foi entregue aos clientes
 
 # ── Chave secreta do servidor (mude para algo aleatório seu) ──
 # No Render, defina como variável de ambiente: SERVER_SECRET
@@ -353,9 +354,31 @@ def update():
         return jsonify({"ok": False, "msg": str(e)}), 500
 
 
+@app.route("/reset", methods=["POST"])
+def reset():
+    """Operador reseta o GxG — limpa snapshot e sinaliza clientes remotos."""
+    global _live_snapshot, _reset_pending
+    body = request.get_json(force=True, silent=True) or {}
+    # Aceita chamada do dashboard (key=gxg_reset) ou do tracker (machine_id autorizado)
+    machine_id = body.get("machine_id", "").strip().upper()
+    key        = body.get("key", "")
+    if machine_id and machine_id not in AUTHORIZED_MACHINES:
+        return jsonify({"ok": False, "msg": "Não autorizado"}), 403
+    if not machine_id and key != "gxg_reset":
+        return jsonify({"ok": False, "msg": "Não autorizado"}), 403
+    _live_snapshot = None
+    _reset_pending = True
+    return jsonify({"ok": True})
+
+
 @app.route("/live", methods=["GET"])
 def live():
-    """Retorna o último snapshot recebido."""
+    """Retorna o último snapshot recebido.
+    Se houver reset pendente, entrega reset=True e limpa a flag."""
+    global _reset_pending
+    if _reset_pending:
+        _reset_pending = False
+        return jsonify({"ok": False, "reset": True, "msg": "Reset pelo operador"}), 200
     if _live_snapshot is None:
         return jsonify({"ok": False, "msg": "Nenhum dado ainda"}), 204
     return jsonify({"ok": True, "snapshot": _live_snapshot})
@@ -364,7 +387,7 @@ def live():
 @app.route("/", methods=["GET"])
 def dashboard():
     """Serve o dashboard HTML."""
-    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "arinar_pve_players.html")
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "warspear_dashboard.html")
     if not os.path.exists(html_path):
         return "Dashboard não encontrado.", 404
     return send_file(html_path, mimetype="text/html")
