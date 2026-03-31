@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔ GxG Dashboard — Arinar [Tracker Adapted]</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg-void:     #07090f;
+    --bg-panel:    #0b0f1c;
+    --bg-card:     #0f1525;
+    --bg-hover:    #182035;
+    --border:      #1b2a44;
+    --border2:     #0e1828;
+    --gold:        #f5c842;
+    --gold2:       #c8960c;
+    --text:        #ccd8f0;
+    --text-dim:    #2e4060;
+    --text-mid:    #5577aa;
+    --accent:      #e03050;
+    --accent2:     #ff4060;
+    --crit:        #ffdd44;
+    --ally:        #4fa3e0;
+    --ally-dim:    #0d2035;
+    --enemy:       #e04f6a;
+    --enemy-dim:   #350d1a;
+    --green:       #00e5a0;
+    --green-dim:   #003d2a;
+    --yellow:      #ffbb33;
+    --yellow-dim:  #3a2a08;
+    --dead-col:    #e03050;
+    --out-col:     #ffbb33;
+    --alive-col:   #00e5a0;
+    --fero-col:    #ff9944;
+    --resi-col:    #44aaff;
+    --heal-col:    #3dd68c;
+    --dmg-col:     #ff6b35;
+    --recv-col:    #e04f6a;
+    --crit-col:    #ffdd44;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg-void); color:var(--text); font-family:'Rajdhani',sans-serif; font-size:14px; min-height:100vh; overflow-x:hidden; }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:var(--bg-void); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* HEADER */
+  .header {
+    background:var(--bg-panel);
+    border-bottom:2px solid #1a1030;
+    padding:8px 16px;
+    display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; z-index:200;
+    box-shadow: 0 2px 20px rgba(0,0,0,.6);
+  }
+  .header::after {
+    content:'';
+    position:absolute; bottom:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, var(--ally), var(--enemy), transparent);
+    opacity:.4;
+  }
+  .header-title {
+    font-family:'Orbitron',sans-serif; font-size:14px; font-weight:900;
+    color:var(--gold); letter-spacing:2px; display:flex; align-items:center; gap:8px;
+  }
+  .header-title .gxg-badge {
+    background:linear-gradient(135deg,var(--ally-dim),var(--enemy-dim));
+    border:1px solid #2a3a5a;
+    color:var(--text-mid); font-size:10px; padding:2px 8px; border-radius:3px;
+    font-weight:400; letter-spacing:1px;
+  }
+  .header-right {
+    margin-left:auto; display:flex; align-items:center; gap:16px;
+    font-size:11px; color:var(--text-mid); font-family:'Share Tech Mono',monospace;
+  }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 6px var(--accent2); display:inline-block; animation:blink 1.5s infinite; }
+  .status-dot.online { background:var(--green); box-shadow:0 0 6px var(--green); animation:none; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* TABS */
+  .tab-nav { background:var(--bg-panel); display:flex; border-bottom:1px solid var(--border); padding:0 16px; gap:2px; }
+  .tab-btn {
+    padding:10px 18px; font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700;
+    letter-spacing:1px; color:var(--text-dim); cursor:pointer; border:none; background:none;
+    border-bottom:2px solid transparent; transition:all .2s; display:flex; align-items:center; gap:6px;
+    white-space:nowrap;
+  }
+  .tab-btn:hover { color:var(--text-mid); }
+  .tab-btn.active { color:var(--ally); border-bottom-color:var(--ally); }
+  .tab-btn.active-out { color:var(--out-col); border-bottom-color:var(--out-col); }
+  .tab-btn.active-rank { color:var(--dmg-col); border-bottom-color:var(--dmg-col); }
+  .tab-badge {
+    background:var(--bg-card); padding:1px 6px; border-radius:4px;
+    font-size:10px; font-family:'Share Tech Mono',monospace;
+  }
+  .tab-badge.warn { background:rgba(255,187,51,.12); color:var(--out-col); }
+  .tab-badge.danger { background:rgba(224,48,80,.12); color:var(--accent2); }
+
+  /* PAGES */
+  .page { display:none; padding:12px 16px; }
+  .page.active { display:block; animation:fadeIn .2s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ACTION BAR */
+  .action-bar { display:flex; gap:6px; justify-content:flex-end; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .action-btn {
+    background:var(--bg-card); border:1px solid var(--border); color:var(--text-mid);
+    padding:4px 12px; border-radius:3px; cursor:pointer; font-family:'Rajdhani',sans-serif;
+    font-size:12px; font-weight:600; transition:all .15s; display:flex; align-items:center; gap:5px;
+  }
+  .action-btn:hover { color:var(--gold); border-color:var(--gold2); background:var(--bg-hover); }
+  .action-btn.danger:hover { color:var(--accent2); border-color:var(--accent); }
+
+  /* ── TUG BAR (VANTAGEM) ── */
+  .tug-section { margin-bottom:12px; }
+  .tug-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .tug-label-ally  { font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; color:var(--ally); display:flex; align-items:center; gap:6px; }
+  .tug-label-enemy { font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; color:var(--enemy); display:flex; align-items:center; gap:6px; }
+  .tug-center {
+    font-family:'Orbitron',sans-serif; font-size:11px; font-weight:900;
+    padding:3px 12px; border-radius:3px;
+    background:var(--bg-card); border:1px solid var(--border);
+    letter-spacing:1px;
+  }
+  .tug-bar {
+    width:100%; height:22px; background:var(--bg-card);
+    border:1px solid var(--border); border-radius:3px; overflow:hidden;
+    position:relative; display:flex;
+  }
+  .tug-ally-fill {
+    height:100%;
+    background:linear-gradient(90deg,#0a1e33,var(--ally));
+    transition:width .6s cubic-bezier(.4,0,.2,1);
+    display:flex; align-items:center; padding-left:8px;
+    font-family:'Orbitron',sans-serif; font-size:11px; font-weight:900;
+    color:#000; min-width:30px;
+  }
+  .tug-enemy-fill {
+    flex:1; height:100%;
+    background:linear-gradient(90deg,var(--enemy),#330a14);
+    display:flex; align-items:center; justify-content:flex-end; padding-right:8px;
+    font-family:'Orbitron',sans-serif; font-size:11px; font-weight:900; color:#000;
+  }
+  .tug-mid-line {
+    position:absolute; left:50%; top:0; bottom:0; width:2px;
+    background:var(--gold); box-shadow:0 0 8px var(--gold);
+    transform:translateX(-50%); pointer-events:none;
+  }
+  .vantagem-bar {
+    margin-top:4px; padding:5px 12px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:3px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    font-family:'Orbitron',sans-serif; font-size:11px; font-weight:900; letter-spacing:1.5px;
+  }
+  .vantagem-bar.ally  { border-color:var(--ally);  color:var(--ally); background:rgba(79,163,224,.06); }
+  .vantagem-bar.enemy { border-color:var(--enemy); color:var(--enemy); background:rgba(224,79,106,.06); }
+  .vantagem-bar.tie   { border-color:var(--gold);  color:var(--gold);  background:rgba(245,200,66,.06); }
+
+  /* ── GUILD COUNTERS ── */
+  .guild-counters { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .guild-counter-card {
+    background:var(--bg-card); border-radius:4px; overflow:hidden; padding:0;
+  }
+  .gcc-ally  { border:1px solid var(--ally);  }
+  .gcc-enemy { border:1px solid var(--enemy); }
+  .gcc-top { height:2px; }
+  .gcc-top-ally  { background:var(--ally);  }
+  .gcc-top-enemy { background:var(--enemy); }
+  .gcc-inner { padding:8px 12px; }
+  .gcc-guild-name { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:1px; margin-bottom:2px; display:flex; align-items:center; justify-content:space-between; }
+  .gcc-count { font-family:'Orbitron',sans-serif; font-size:30px; font-weight:900; line-height:1; }
+  .gcc-ally  .gcc-count { color:var(--ally); }
+  .gcc-enemy .gcc-count { color:var(--enemy); }
+  .gcc-sub { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; margin-top:2px; }
+  .gcc-classes { display:flex; flex-wrap:wrap; gap:3px; margin-top:6px; }
+  .gcc-class-chip {
+    font-size:9px; font-family:'Share Tech Mono',monospace;
+    background:var(--bg-hover); border:1px solid var(--border2);
+    border-radius:2px; padding:1px 5px;
+    display:flex; align-items:center; gap:3px;
+  }
+
+  /* ── PLAYERS SECTION (Presença) ── */
+  .players-summary-bar {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:4px;
+    padding:8px 14px; margin-bottom:10px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .ps-total { font-family:'Orbitron',sans-serif; }
+  .ps-total-num { font-size:26px; font-weight:900; color:var(--ally); }
+  .ps-total-lbl { font-size:9px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; letter-spacing:1px; }
+  .ps-stat { background:var(--bg-panel); border:1px solid var(--border); border-radius:3px; padding:5px 14px; text-align:center; }
+  .ps-stat-val { font-family:'Orbitron',sans-serif; font-size:17px; font-weight:900; }
+  .ps-stat-lbl { font-size:9px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; }
+
+  /* Class group (same style as pve_players) */
+  .class-group { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:6px; }
+  .class-group-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:5px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border2);
+    cursor:pointer; user-select:none; transition:background .1s;
+  }
+  .class-group-header:hover { background:var(--bg-hover); }
+  .class-group-left { display:flex; align-items:center; gap:8px; }
+  .class-group-icon { width:24px; height:24px; border-radius:3px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; font-family:'Share Tech Mono',monospace; font-size:10px; font-weight:700; border:1px solid var(--border); flex-shrink:0; }
+  .class-group-name { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; }
+  .class-group-meta { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text-mid); }
+  .class-group-right { display:flex; align-items:center; gap:6px; font-family:'Share Tech Mono',monospace; font-size:10px; }
+
+  /* Player row inside class group */
+  .player-row {
+    display:flex; align-items:center; gap:10px;
+    padding:6px 12px; border-bottom:1px solid var(--border2);
+    position:relative; overflow:hidden; transition:background .1s;
+  }
+  .player-row:last-child { border-bottom:none; }
+  .player-row:hover { background:var(--bg-hover); }
+  .pr-hp-bg  { position:absolute; left:0;top:0;bottom:0; pointer-events:none; opacity:.07; transition:width .5s; }
+  .pr-hp-bar { position:absolute; left:0;bottom:0; height:3px; opacity:.8; transition:width .5s; }
+  .pr-avatar {
+    width:28px; height:28px; border-radius:3px; background:var(--bg-hover);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Share Tech Mono',monospace; font-size:11px; font-weight:700;
+    flex-shrink:0; border:1px solid var(--border);
+  }
+  .pr-info { flex:1; min-width:0; }
+  .pr-name  { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pr-class { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .pr-buffs { display:flex; gap:3px; flex-shrink:0; }
+  .buff-chip {
+    font-size:9px; font-family:'Orbitron',sans-serif; font-weight:700;
+    padding:1px 5px; border-radius:2px; border:1px solid transparent;
+    letter-spacing:.5px;
+  }
+  .buff-fero        { background:rgba(255,153,68,.15); border-color:var(--fero-col); color:var(--fero-col); }
+  .buff-fero-off    { background:rgba(255,153,68,.04); border-color:#2a2010; color:#3a2a10; }
+  .buff-resi        { background:rgba(68,170,255,.15); border-color:var(--resi-col); color:var(--resi-col); }
+  .buff-resi-off    { background:rgba(68,170,255,.04); border-color:#102030; color:#102030; }
+  .pr-hp-right { text-align:right; flex-shrink:0; min-width:80px; }
+  .pr-hp-pct   { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; }
+  .pr-hp-nums  { font-size:9px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .pr-buffs-count {
+    background:rgba(61,214,140,.1); border:1px solid rgba(61,214,140,.2);
+    color:var(--heal-col); font-size:9px; font-family:'Share Tech Mono',monospace;
+    padding:1px 6px; border-radius:2px; flex-shrink:0; white-space:nowrap;
+  }
+
+  /* Status badges */
+  .status-badge {
+    font-size:8px; font-family:'Orbitron',sans-serif; font-weight:700;
+    padding:2px 6px; border-radius:2px; flex-shrink:0; white-space:nowrap; letter-spacing:.5px;
+  }
+  .badge-dead { background:rgba(224,48,80,.15); color:var(--accent2); border:1px solid rgba(224,48,80,.3); animation:blink 2s infinite; }
+  .badge-out  { background:rgba(255,187,51,.12); color:var(--out-col); border:1px solid rgba(255,187,51,.3); }
+  .badge-alive { display:none; }
+
+  /* ── FORA DA ÁREA TAB ── */
+  .out-empty {
+    padding:40px; text-align:center;
+    color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:11px;
+  }
+  .out-player-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:4px;
+    padding:10px 14px; margin-bottom:6px;
+    display:flex; align-items:center; gap:12px;
+    border-left:3px solid var(--out-col);
+  }
+  .out-avatar {
+    width:32px; height:32px; border-radius:3px; background:var(--yellow-dim);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Share Tech Mono',monospace; font-size:12px; font-weight:700;
+    flex-shrink:0; border:1px solid rgba(255,187,51,.3); color:var(--out-col);
+  }
+  .out-info { flex:1; min-width:0; }
+  .out-name  { font-size:14px; font-weight:700; color:var(--out-col); }
+  .out-class { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .out-timer {
+    font-family:'Orbitron',sans-serif; font-size:20px; font-weight:900;
+    color:var(--out-col); flex-shrink:0; text-align:right;
+  }
+  .out-timer-lbl { font-size:9px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; }
+
+  /* ── RANKINGS ── */
+  .rank-section { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .rank-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border);
+  }
+  .rank-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .rank-tabs  { display:flex; gap:3px; }
+  .rank-tab {
+    font-size:9px; font-family:'Orbitron',sans-serif; font-weight:700;
+    padding:2px 8px; border-radius:2px; cursor:pointer;
+    color:var(--text-dim); background:var(--bg-void); border:1px solid var(--border2);
+    transition:all .15s;
+  }
+  .rank-tab:hover { color:var(--text-mid); }
+  .rank-tab.active { color:var(--gold); background:#2e220866; border-color:var(--gold2); }
+  .rank-list { max-height:300px; overflow-y:auto; }
+  .rank-row {
+    display:flex; align-items:center; padding:6px 12px;
+    border-bottom:1px solid var(--border2); gap:8px;
+    transition:background .1s; position:relative; overflow:hidden;
+  }
+  .rank-row:last-child { border-bottom:none; }
+  .rank-row:hover { background:var(--bg-hover); }
+  .rank-bar-bg { position:absolute; left:0;top:0;bottom:0; pointer-events:none; opacity:.1; }
+  .rank-bar    { position:absolute; left:0;bottom:0; height:2px; opacity:.7; }
+  .rank-num { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; width:18px; text-align:center; color:var(--text-dim); flex-shrink:0; }
+  .rank-num.r1 { color:var(--gold); }
+  .rank-num.r2 { color:#a8b4c8; }
+  .rank-num.r3 { color:#c8845a; }
+  .rank-avatar { width:26px;height:26px;border-radius:3px;background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;border:1px solid var(--border); }
+  .rank-info { flex:1; min-width:0; }
+  .rank-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rank-sub  { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; }
+  .rank-val  { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; text-align:right; flex-shrink:0; }
+
+  /* Rankings 2-col layout */
+  .rank-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  /* ── ALERTS ── */
+  #alertToast {
+    position:fixed; top:60px; right:16px; z-index:9999;
+    display:flex; flex-direction:column; gap:4px; pointer-events:none;
+    max-width:280px;
+  }
+  .alert-item {
+    background:var(--bg-panel); border-radius:4px; padding:8px 12px;
+    font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:600;
+    display:flex; align-items:center; gap:8px;
+    animation:slideIn .3s ease, fadeOut .4s 3.6s forwards;
+    border-left:3px solid var(--accent2);
+    box-shadow:0 4px 20px rgba(0,0,0,.5);
+  }
+  .alert-item.alert-dead { border-left-color:var(--dead-col); color:var(--accent2); }
+  .alert-item.alert-out  { border-left-color:var(--out-col);  color:var(--out-col); }
+  .alert-item.alert-back { border-left-color:var(--green);    color:var(--green); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes fadeOut { from{opacity:1} to{opacity:0;pointer-events:none} }
+
+  /* remote banner */
+  #remoteBanner {
+    display:none; position:fixed; bottom:12px; left:50%;
+    transform:translateX(-50%);
+    background:#1a0a0a; border:1px solid var(--accent2);
+    color:var(--accent2); font-family:monospace; font-size:11px;
+    padding:6px 16px; border-radius:4px; z-index:9999;
+    pointer-events:none; letter-spacing:1px;
+  }
+
+  /* misc */
+  .section-label { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; color:var(--text-mid); letter-spacing:1.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+  .empty-msg { padding:24px; text-align:center; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:11px; }
+
+  @media(max-width:640px) {
+    .guild-counters { grid-template-columns:1fr; }
+    .rank-grid { grid-template-columns:1fr; }
+    .players-summary-bar { gap:8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-title">
+    ⚔ GxG <span style="color:var(--text-mid);font-weight:400;font-size:12px;margin-left:4px;">ARENA</span>
+    <span class="gxg-badge">GUILD vs GUILD</span>
+  </div>
+  <div class="header-right">
+    <span id="clock" style="font-size:13px;color:var(--text);">00:00:00</span>
+    <span><span class="status-dot" id="statusDot"></span> <span id="statusText" style="font-size:10px;">OFFLINE</span></span>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabPresenca" onclick="switchTab('presenca')">
+    👥 PRESENÇA <span class="tab-badge" id="badgePresenca">0</span>
+  </button>
+  <button class="tab-btn" id="tabFora" onclick="switchTab('fora')">
+    🚨 FORA DA ÁREA <span class="tab-badge warn" id="badgeFora">0</span>
+  </button>
+  <button class="tab-btn" id="tabRank" onclick="switchTab('rank')">
+    🏆 RANKINGS <span class="tab-badge" id="badgeRank" style="color:var(--dmg-col);">LIVE</span>
+  </button>
+</div>
+
+<!-- ALERT TOASTS -->
+<div id="alertToast"></div>
+
+<!-- ════════════════════════════════════════
+     PAGE: PRESENÇA
+════════════════════════════════════════ -->
+<div class="page active" id="pagePresenca">
+
+  <div class="action-bar">
+    <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);margin-right:auto;">Guilda Aliada: <b id="configAllyName" style="color:var(--ally);">—</b> &nbsp;vs&nbsp; Inimiga: <b id="configEnemyName" style="color:var(--enemy);">—</b></span>
+    <button class="action-btn" onclick="openConfig()">⚙ Configurar Guildas</button>
+    <button class="action-btn danger" onclick="resetAll()">↺ Reset</button>
+  </div>
+
+  <!-- VANTAGEM / TUG -->
+  <div class="tug-section">
+    <div class="tug-header">
+      <div class="tug-label-ally">
+        <span style="font-size:16px;">🔵</span>
+        <span id="tugAllyName">ALIADOS</span>
+        <span style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--ally)" id="tugAllyCount">0</span>
+      </div>
+      <div class="tug-center" id="tugCenter">—</div>
+      <div class="tug-label-enemy" style="text-align:right;">
+        <span style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--enemy)" id="tugEnemyCount">0</span>
+        <span id="tugEnemyName">INIMIGOS</span>
+        <span style="font-size:16px;">🔴</span>
+      </div>
+    </div>
+    <div class="tug-bar">
+      <div class="tug-ally-fill" id="tugAllyFill" style="width:50%">0</div>
+      <div class="tug-enemy-fill" id="tugEnemyFill">0</div>
+      <div class="tug-mid-line"></div>
+    </div>
+    <div class="vantagem-bar tie" id="vantagemBar">⚖ EQUILIBRADO</div>
+  </div>
+
+  <!-- GUILD COUNTERS -->
+  <div class="guild-counters">
+    <div class="guild-counter-card gcc-ally">
+      <div class="gcc-top gcc-top-ally"></div>
+      <div class="gcc-inner">
+        <div class="gcc-guild-name" style="color:var(--ally);">
+          <span id="gccAllyName">GUILDA ALIADA</span>
+          <span style="color:var(--text-mid);font-size:9px;">🔵 ALIADA</span>
+        </div>
+        <div class="gcc-count" id="gccAllyCount">0</div>
+        <div class="gcc-sub" id="gccAllySubtitle">0 vivos · 0 mortos · 0 fora</div>
+        <div class="gcc-classes" id="gccAllyClasses"></div>
+      </div>
+    </div>
+    <div class="guild-counter-card gcc-enemy">
+      <div class="gcc-top gcc-top-enemy"></div>
+      <div class="gcc-inner">
+        <div class="gcc-guild-name" style="color:var(--enemy);">
+          <span id="gccEnemyName">GUILDA INIMIGA</span>
+          <span style="color:var(--text-mid);font-size:9px;">🔴 INIMIGA</span>
+        </div>
+        <div class="gcc-count" id="gccEnemyCount">0</div>
+        <div class="gcc-sub" id="gccEnemySubtitle">0 vivos · 0 mortos · 0 fora</div>
+        <div class="gcc-classes" id="gccEnemyClasses"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYERS PRESENÇA -->
+  <div class="players-summary-bar">
+    <div class="ps-total">
+      <div class="ps-total-lbl">PLAYERS DETECTADOS</div>
+      <div class="ps-total-num" id="psTotalNum">0</div>
+    </div>
+    <div class="ps-stat">
+      <div class="ps-stat-val" style="color:var(--green)" id="psVivosNum">0</div>
+      <div class="ps-stat-lbl">VIVOS</div>
+    </div>
+    <div class="ps-stat">
+      <div class="ps-stat-val" style="color:var(--accent2)" id="psMortosNum">0</div>
+      <div class="ps-stat-lbl">MORTOS</div>
+    </div>
+    <div class="ps-stat">
+      <div class="ps-stat-val" style="color:var(--out-col)" id="psForaNum">0</div>
+      <div class="ps-stat-lbl">FORA DA ÁREA</div>
+    </div>
+  </div>
+
+  <div class="section-label">👥 JOGADORES POR CLASSE</div>
+  <div id="classGroupsContainer"></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE: FORA DA ÁREA
+════════════════════════════════════════ -->
+<div class="page" id="pageFora">
+  <div class="action-bar">
+    <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);margin-right:auto;">
+      Players ausentes ≥ 15s são listados aqui
+    </span>
+  </div>
+  <div class="section-label">🚨 FORA DA ÁREA (≥ 15s)</div>
+  <div id="foraContainer"><div class="out-empty">✅ Nenhum player fora da área no momento.</div></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE: RANKINGS
+════════════════════════════════════════ -->
+<div class="page" id="pageRank">
+  <div class="action-bar">
+    <button class="action-btn" onclick="saveRanking()">💾 Exportar TXT</button>
+    <button class="action-btn danger" onclick="resetRanks()">↺ Reset Rankings</button>
+  </div>
+
+  <div class="rank-grid">
+    <!-- DANO -->
+    <div class="rank-section">
+      <div class="rank-header">
+        <div class="rank-title" style="color:var(--dmg-col);">🔥 DANO CAUSADO</div>
+      </div>
+      <div class="rank-list" id="rankDmgList"><div class="empty-msg">Sem dados.</div></div>
+    </div>
+
+    <!-- HEAL -->
+    <div class="rank-section">
+      <div class="rank-header">
+        <div class="rank-title" style="color:var(--heal-col);">💚 CURA (HEAL)</div>
+      </div>
+      <div class="rank-list" id="rankHealList"><div class="empty-msg">Sem dados.</div></div>
+    </div>
+
+    <!-- CRÍTICO -->
+    <div class="rank-section">
+      <div class="rank-header">
+        <div class="rank-title" style="color:var(--crit-col);">💥 MAIOR CRÍTICO</div>
+      </div>
+      <div class="rank-list" id="rankCritList"><div class="empty-msg">Sem dados.</div></div>
+    </div>
+
+    <!-- DANO RECEBIDO -->
+    <div class="rank-section">
+      <div class="rank-header">
+        <div class="rank-title" style="color:var(--recv-col);">🛡 DANO RECEBIDO</div>
+      </div>
+      <div class="rank-list" id="rankRecvList"><div class="empty-msg">Sem dados.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CONFIG MODAL ─── -->
+<div id="configModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:20px;width:320px;max-width:90vw;">
+    <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);margin-bottom:16px;">⚙ Configurar Guildas</div>
+    <label style="font-size:11px;color:var(--text-mid);font-family:'Share Tech Mono',monospace;">Guilda Aliada</label>
+    <input id="inputAlly" type="text" placeholder="Nome da guilda aliada"
+      style="width:100%;background:var(--bg-card);border:1px solid var(--ally);color:var(--text);padding:6px 10px;border-radius:3px;font-family:'Rajdhani',sans-serif;font-size:13px;margin:4px 0 12px;outline:none;">
+    <label style="font-size:11px;color:var(--text-mid);font-family:'Share Tech Mono',monospace;">Guilda Inimiga</label>
+    <input id="inputEnemy" type="text" placeholder="Nome da guilda inimiga"
+      style="width:100%;background:var(--bg-card);border:1px solid var(--enemy);color:var(--text);padding:6px 10px;border-radius:3px;font-family:'Rajdhani',sans-serif;font-size:13px;margin:4px 0 16px;outline:none;">
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeConfig()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-mid);padding:6px 16px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;">Cancelar</button>
+      <button onclick="saveConfig()" style="background:rgba(79,163,224,.15);border:1px solid var(--ally);color:var(--ally);padding:6px 16px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;">✔ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- REMOTE BANNER -->
+<div id="remoteBanner">⚠ Aguardando dados do tracker...</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CLASS DEFINITIONS
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// CLASS DEFINITIONS — sincronizadas com CLASS_MAP do tracker
+// Sentinelas: 1=Paladino 2=Sacerdote 3=Mago 7=Bladedancer 13=Seeker
+//             8=Ranger   9=Druida   15=Warden 19=Beastmaster 17=Templário
+// Legião:     4=Barbarian 5=Rogue  6=Shaman 10=Deathknight 12=Warlock
+//             11=Necromancer 14=Hunter 18=Cacique 16=Charmer 20=Reaper
+// ═══════════════════════════════════════════════════
+const CLASS_ICON = {
+  1:'PA',  2:'SA',  3:'MG',  7:'BD',  13:'SK',
+  8:'RG',  9:'DR',  15:'WD', 19:'BM', 17:'TM',
+  4:'BR',  5:'RO',  6:'SH',  10:'DK', 12:'WL',
+  11:'NC', 14:'HU', 18:'CC', 16:'CH', 20:'RP',
+};
+const CLASS_NAME = {
+  1:'Paladino',     2:'Sacerdote',   3:'Mago',        7:'Bladedancer', 13:'Seeker',
+  8:'Ranger',       9:'Druida',      15:'Warden',     19:'Beastmaster',17:'Templário',
+  4:'Barbarian',    5:'Rogue',       6:'Shaman',      10:'Deathknight',12:'Warlock',
+  11:'Necromancer', 14:'Hunter',     18:'Cacique',    16:'Charmer',    20:'Reaper',
+};
+const CLASS_COLOR = {
+  // Sentinelas — tons de azul/verde/ciano
+  1:'#ffcc44',  2:'#aaffdd', 3:'#44aaff',  7:'#44ddff',  13:'#ffdd44',
+  8:'#44ee88',  9:'#66cc44', 15:'#4499ff', 19:'#88cc44', 17:'#ffaacc',
+  // Legião — tons de laranja/vermelho/roxo
+  4:'#ff8844',  5:'#ff6644', 6:'#ff4444',  10:'#c070ff', 12:'#aa66ff',
+  11:'#cc44ff', 14:'#ff9944',18:'#ff8844', 16:'#dd88ff', 20:'#ff4488',
+};
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let currentTab = 'presenca';
+let _classGroupOpen = {};
+
+// Guild config
+let allyGuildName  = localStorage.getItem('gxg_ally')  || 'FIRE';
+let enemyGuildName = localStorage.getItem('gxg_enemy') || 'INIMIGOS';
+
+// Player registry: persists all players seen
+// { [name]: { name, class_id, guild, cur_hp, max_hp, buffs, fero, resi, status: 'alive'|'dead'|'out', lastSeen, outSince } }
+let playerRegistry = {};
+
+// Rankings
+let rankDmg  = []; // [{name, class_id, val, bar_pct}]
+let rankHeal = [];
+let rankCrit = [];
+let rankRecv = [];
+
+// Out-of-area timers (name -> outSince timestamp)
+let outTimers = {};
+
+
+// ═══════════════════════════════════════════════════
+// DATA INGESTION (called by onPythonPush or remote poll)
+// ═══════════════════════════════════════════════════
+
+/**
+ * Formato real enviado pelo warspear_tracker.py (GxG) via _push_to_js:
+ * {
+ *   ts, cycle_ms,
+ *   sent_counts, leg_counts,
+ *   rows_dmg:  [{rank,name,class_id,class_name,guild,val,pct,bar_pct,faccao,is_top,is_you}],
+ *   rows_recv: [...],
+ *   rows_crit: [...],
+ *   entities:  [{name,class_id,class_name,faccao,guild,alive,cur_hp,max_hp}],
+ *   buffs:     [{name,class_id,class_name,guild,faccao,buff_count,has_fero,has_resi}],
+ *   bosses:    [{name,max_hp,cur_hp}],
+ *   last_dmg:  {name,val},
+ * }
+ *
+ * Formato real enviado pelo warspear_tracker_pve.py via _push_to_js:
+ * {
+ *   ts, cycle_ms,
+ *   rows_dmg:  [{rank,name,class_id,class_name,guild,val,bar_pct,faccao,tag}],
+ *   rows_dps:  [...],  ← ignorado pelo dashboard GxG
+ *   rows_recv: [...],
+ *   rows_crit: [...],
+ *   rows_heal: [{rank,name,class_id,class_name,guild,val,bar_pct,faccao,tag}],  ← HEAL!
+ *   entities:  [{name,class_id,class_name,faccao,guild,alive,cur_hp,max_hp}],
+ *   bosses:    [{name,cur_hp,max_hp,focus_target,focus_addr}],
+ * }
+ *
+ * Compatibilidade retroativa: também aceita o formato legado com snapshot.players
+ */
+function _normalizeSnapshot(snapshot) {
+  // ── Formato legado (dashboard standalone / demo) ──
+  if (snapshot.players) return snapshot;
+
+  // ── Formato real do tracker ──
+  // Mescla entities + buffs num array de "players" unificado
+  const buffMap = {};
+  (snapshot.buffs || []).forEach(b => {
+    buffMap[b.name] = b;
+  });
+
+  const players = (snapshot.entities || []).map(e => {
+    const b = buffMap[e.name] || {};
+    // guild: usa o campo do buff (mais confiável) ou da entidade
+    const guild = b.guild || e.guild || '';
+    return {
+      name:     e.name,
+      class_id: e.class_id,
+      guild:    guild,
+      faccao:   e.faccao,
+      cur_hp:   e.cur_hp,
+      max_hp:   e.max_hp,
+      buffs:    b.buff_count || 0,
+      fero:     b.has_fero  || false,
+      resi:     b.has_resi  || false,
+    };
+  });
+
+  // Converte rows_dmg/recv/crit para o formato esperado pelo renderRankList
+  function convertRows(rows) {
+    if (!rows || !rows.length) return [];
+    return rows.map(r => ({
+      name:     r.name,
+      class_id: r.class_id || 0,
+      guild:    r.guild    || '',
+      val:      r.val,
+      bar_pct:  r.bar_pct  || 0,
+    }));
+  }
+
+  return {
+    players,
+    rank_dmg:  convertRows(snapshot.rows_dmg),
+    rank_heal: convertRows(snapshot.rows_heal || []),
+    rank_crit: convertRows(snapshot.rows_crit),
+    rank_recv: convertRows(snapshot.rows_recv),
+    // repassa campos extras que possam existir
+    _raw: snapshot,
+  };
+}
+
+function onPythonPush(snapshot) {
+  if (!snapshot) return;
+
+  const norm = _normalizeSnapshot(snapshot);
+  const now  = Date.now();
+  const seenNames = new Set();
+
+  // ── Atualiza players ──
+  if (norm.players) {
+    norm.players.forEach(p => {
+      seenNames.add(p.name);
+      const existing = playerRegistry[p.name];
+
+      let newStatus = p.cur_hp <= 0 ? 'dead' : 'alive';
+
+      if (!existing) {
+        playerRegistry[p.name] = { ...p, status: newStatus, lastSeen: now, outSince: null };
+        if (newStatus === 'dead') showAlert(`☠ ${p.name} morreu!`, 'alert-dead');
+      } else {
+        const wasDead = existing.status === 'dead';
+        const wasOut  = existing.status === 'out';
+
+        if (newStatus === 'dead' && !wasDead) {
+          showAlert(`☠ ${p.name} morreu!`, 'alert-dead');
+        }
+        if (newStatus === 'alive' && wasOut) {
+          showAlert(`🔁 ${p.name} voltou à área`, 'alert-back');
+        }
+        if (wasOut && newStatus !== 'dead') {
+          delete outTimers[p.name];
+          existing.outSince = null;
+        }
+
+        playerRegistry[p.name] = {
+          ...existing, ...p,
+          status:   newStatus,
+          lastSeen: now,
+          outSince: newStatus === 'out' ? (existing.outSince || now) : null,
+        };
+      }
+    });
+
+    // ── Detecta players que sumiram da área ──
+    Object.keys(playerRegistry).forEach(name => {
+      if (!seenNames.has(name)) {
+        const p = playerRegistry[name];
+        if (p.status === 'alive') {
+          const hpPct = p.max_hp > 0 ? p.cur_hp / p.max_hp : 0;
+          if (hpPct >= 0.8) {
+            if (!outTimers[name]) {
+              outTimers[name] = now;
+              p.outSince = now;
+            }
+            const elapsed = (now - outTimers[name]) / 1000;
+            if (elapsed >= 15 && p.status !== 'out') {
+              p.status = 'out';
+              showAlert(`🚪 ${name} saiu da área (${elapsed.toFixed(0)}s)`, 'alert-out');
+            }
+          }
+        }
+      } else {
+        // Player voltou — limpa timer de saída
+        if (outTimers[name]) {
+          delete outTimers[name];
+        }
+      }
+    });
+  }
+
+  // ── Rankings — só atualiza se o novo array não for vazio ──
+  if (norm.rank_dmg  && norm.rank_dmg.length)  rankDmg  = norm.rank_dmg;
+  if (norm.rank_heal && norm.rank_heal.length)  rankHeal = norm.rank_heal;
+  if (norm.rank_crit && norm.rank_crit.length)  rankCrit = norm.rank_crit;
+  if (norm.rank_recv && norm.rank_recv.length)  rankRecv = norm.rank_recv;
+
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════
+function renderAll() {
+  updateTug();
+  updateSummary();
+  if (currentTab === 'presenca') renderPlayers();
+  if (currentTab === 'fora')     renderFora();
+  if (currentTab === 'rank')     renderRankings();
+
+  // Update tab badges
+  const outCount = Object.values(playerRegistry).filter(p => p.status === 'out').length;
+  document.getElementById('badgePresenca').textContent = Object.keys(playerRegistry).length;
+  document.getElementById('badgeFora').textContent = outCount;
+}
+
+// ── TUG BAR ──────────────────────────────────
+function updateTug() {
+  const ally  = allyGuildName;
+  const enemy = enemyGuildName;
+
+  // Count alive players per side
+  let allyAlive = 0, enemyAlive = 0, allyTotal = 0, enemyTotal = 0;
+  let allyDead = 0, enemyDead = 0, allyOut = 0, enemyOut = 0;
+  const allyClassCount = {}, enemyClassCount = {};
+
+  Object.values(playerRegistry).forEach(p => {
+    const isAlly = p.guild === ally;
+    const isEnemy = p.guild === enemy;
+    if (!isAlly && !isEnemy) return;
+
+    if (isAlly) {
+      allyTotal++;
+      if (p.status === 'alive') allyAlive++;
+      if (p.status === 'dead')  allyDead++;
+      if (p.status === 'out')   allyOut++;
+      allyClassCount[p.class_id] = (allyClassCount[p.class_id]||0)+1;
+    } else {
+      enemyTotal++;
+      if (p.status === 'alive') enemyAlive++;
+      if (p.status === 'dead')  enemyDead++;
+      if (p.status === 'out')   enemyOut++;
+      enemyClassCount[p.class_id] = (enemyClassCount[p.class_id]||0)+1;
+    }
+  });
+
+  // TUG bar
+  const total = allyAlive + enemyAlive;
+  const allyPct = total > 0 ? Math.round((allyAlive / total) * 100) : 50;
+  document.getElementById('tugAllyFill').style.width = allyPct + '%';
+  document.getElementById('tugAllyFill').textContent = allyAlive;
+  document.getElementById('tugEnemyFill').textContent = enemyAlive;
+  document.getElementById('tugAllyCount').textContent = allyAlive;
+  document.getElementById('tugEnemyCount').textContent = enemyAlive;
+
+  // Guild names
+  document.getElementById('tugAllyName').textContent = ally;
+  document.getElementById('tugEnemyName').textContent = enemy;
+  document.getElementById('configAllyName').textContent = ally;
+  document.getElementById('configEnemyName').textContent = enemy;
+  document.getElementById('gccAllyName').textContent = ally;
+  document.getElementById('gccEnemyName').textContent = enemy;
+
+  // Vantagem
+  const vBar = document.getElementById('vantagemBar');
+  const tugC = document.getElementById('tugCenter');
+  if (allyAlive > enemyAlive) {
+    vBar.className = 'vantagem-bar ally';
+    vBar.textContent = `⚡ VANTAGEM DE ${ally.toUpperCase()}`;
+    tugC.textContent = `+${allyAlive - enemyAlive}`;
+    tugC.style.color = 'var(--ally)';
+  } else if (enemyAlive > allyAlive) {
+    vBar.className = 'vantagem-bar enemy';
+    vBar.textContent = `⚡ VANTAGEM DE ${enemy.toUpperCase()}`;
+    tugC.textContent = `+${enemyAlive - allyAlive}`;
+    tugC.style.color = 'var(--enemy)';
+  } else {
+    vBar.className = 'vantagem-bar tie';
+    vBar.textContent = '⚖ EQUILIBRADO';
+    tugC.textContent = '=';
+    tugC.style.color = 'var(--gold)';
+  }
+
+  // Guild counters
+  document.getElementById('gccAllyCount').textContent = allyAlive;
+  document.getElementById('gccEnemyCount').textContent = enemyAlive;
+  document.getElementById('gccAllySubtitle').textContent = `${allyAlive} vivos · ${allyDead} mortos · ${allyOut} fora`;
+  document.getElementById('gccEnemySubtitle').textContent = `${enemyAlive} vivos · ${enemyDead} mortos · ${enemyOut} fora`;
+
+  // Class chips
+  function buildClassChips(container, countObj) {
+    container.innerHTML = '';
+    Object.entries(countObj).sort((a,b)=>b[1]-a[1]).forEach(([cid, cnt]) => {
+      const chip = document.createElement('div');
+      chip.className = 'gcc-class-chip';
+      chip.style.color = CLASS_COLOR[cid] || 'var(--text-mid)';
+      chip.innerHTML = `<span>${CLASS_ICON[cid]||'?'}</span><span>${cnt}</span>`;
+      container.appendChild(chip);
+    });
+  }
+  buildClassChips(document.getElementById('gccAllyClasses'), allyClassCount);
+  buildClassChips(document.getElementById('gccEnemyClasses'), enemyClassCount);
+}
+
+// ── SUMMARY ──────────────────────────────────
+function updateSummary() {
+  const all = Object.values(playerRegistry);
+  document.getElementById('psTotalNum').textContent  = all.length;
+  document.getElementById('psVivosNum').textContent  = all.filter(p=>p.status==='alive').length;
+  document.getElementById('psMortosNum').textContent = all.filter(p=>p.status==='dead').length;
+  document.getElementById('psForaNum').textContent   = all.filter(p=>p.status==='out').length;
+}
+
+// ── PLAYERS (Presença) ────────────────────────
+function renderPlayers() {
+  const container = document.getElementById('classGroupsContainer');
+  const all = Object.values(playerRegistry);
+
+  // Group by class
+  const byClass = {};
+  all.forEach(p => {
+    if (!byClass[p.class_id]) byClass[p.class_id] = [];
+    byClass[p.class_id].push(p);
+  });
+
+  const classIds = Object.keys(byClass).sort((a,b) => byClass[b].length - byClass[a].length);
+  container.innerHTML = '';
+
+  if (!classIds.length) {
+    container.innerHTML = '<div class="empty-msg">Nenhum player detectado ainda.</div>';
+    return;
+  }
+
+  classIds.forEach(cid => {
+    const players = byClass[cid];
+    const className = CLASS_NAME[cid] || 'Classe ?';
+    const icon      = CLASS_ICON[cid] || '?';
+    const color     = CLASS_COLOR[cid] || 'var(--text-mid)';
+    const vivos     = players.filter(p => p.status === 'alive').length;
+    const isOpen    = _classGroupOpen[cid] !== false;
+
+    const group = document.createElement('div');
+    group.className = 'class-group';
+
+    const header = document.createElement('div');
+    header.className = 'class-group-header';
+    header.innerHTML = `
+      <div class="class-group-left">
+        <div class="class-group-icon" style="color:${color};border-color:${color}44;">${icon}</div>
+        <div class="class-group-name" style="color:${color}">${className}</div>
+        <div class="class-group-meta" style="margin-left:8px;">${players.length} total</div>
+      </div>
+      <div class="class-group-right">
+        <span style="color:${color};font-weight:700;font-family:'Orbitron',sans-serif;">${vivos}</span>
+        <span style="color:var(--text-dim);font-size:9px;font-family:'Share Tech Mono',monospace;">/ ${players.length} vivos</span>
+        <span style="margin-left:6px;color:var(--text-dim);">${isOpen?'▲':'▼'}</span>
+      </div>`;
+    header.onclick = () => {
+      _classGroupOpen[cid] = !(_classGroupOpen[cid] !== false);
+      renderPlayers();
+    };
+
+    const body = document.createElement('div');
+    if (isOpen) {
+      // Sort: alive → out → dead; within alive sort by hp% desc
+      players.sort((a, b) => {
+        const ord = {alive:0, out:1, dead:2};
+        if (ord[a.status] !== ord[b.status]) return ord[a.status] - ord[b.status];
+        const pA = a.max_hp > 0 ? a.cur_hp / a.max_hp : 0;
+        const pB = b.max_hp > 0 ? b.cur_hp / b.max_hp : 0;
+        return pB - pA;
+      });
+
+      players.forEach(p => {
+        const hpPct   = p.max_hp > 0 ? Math.max(0, Math.min(1, p.cur_hp / p.max_hp)) : 0;
+        const hpPctN  = (hpPct * 100).toFixed(0);
+        const hpColor = hpPct > 0.6 ? 'var(--green)' : hpPct > 0.3 ? 'var(--yellow)' : 'var(--accent2)';
+
+        const prow = document.createElement('div');
+        prow.className = 'player-row';
+        if (p.status === 'dead') prow.style.opacity = '0.6';
+
+        let statusBadgeHtml = '';
+        if (p.status === 'dead') statusBadgeHtml = '<span class="status-badge badge-dead">☠ MORREU</span>';
+        else if (p.status === 'out') statusBadgeHtml = '<span class="status-badge badge-out">🚪 FORA DA ÁREA</span>';
+
+        let hpRightHtml = '';
+        if (p.status !== 'dead') {
+          hpRightHtml = `<div class="pr-hp-right">
+            <div class="pr-hp-pct" style="color:${hpColor}">${hpPctN}%</div>
+            <div class="pr-hp-nums">${fmtNum(p.cur_hp)} / ${fmtNum(p.max_hp)}</div>
+          </div>`;
+        }
+
+        const guildColor = p.guild === allyGuildName ? 'var(--ally)' : p.guild === enemyGuildName ? 'var(--enemy)' : 'var(--text-mid)';
+        // Mostra facção se disponível
+        const faccaoLabel = p.faccao ? ` <span style="opacity:.6;font-size:9px;">[${p.faccao === 'SENTINELAS' ? 'SENT' : 'LEG'}]</span>` : '';
+
+        prow.innerHTML = `
+          <div class="pr-hp-bg"  style="width:${hpPctN}%;background:${hpColor}"></div>
+          <div class="pr-hp-bar" style="width:${hpPctN}%;background:${hpColor}"></div>
+          <div class="pr-avatar" style="color:${color};border-color:${color}44;">${icon}</div>
+          <div class="pr-info">
+            <div class="pr-name" style="${p.status==='dead'?'color:var(--text-dim);text-decoration:line-through;':''}">${p.name}</div>
+            <div class="pr-class"><span style="color:${guildColor}">${p.guild||'—'}</span>${faccaoLabel}</div>
+          </div>
+          <div class="pr-buffs">
+            <span class="buff-chip ${p.fero ? 'buff-fero' : 'buff-fero-off'}" title="Ferocidade">FERO</span>
+            <span class="buff-chip ${p.resi ? 'buff-resi' : 'buff-resi-off'}" title="Resiliência">RESI</span>
+          </div>
+          ${p.buffs > 0 ? `<span class="pr-buffs-count">+${p.buffs} buffs</span>` : ''}
+          ${statusBadgeHtml}
+          ${hpRightHtml}`;
+
+        body.appendChild(prow);
+      });
+    }
+
+    group.appendChild(header);
+    group.appendChild(body);
+    container.appendChild(group);
+  });
+}
+
+// ── FORA DA ÁREA ──────────────────────────────
+function renderFora() {
+  const container = document.getElementById('foraContainer');
+  const outPlayers = Object.values(playerRegistry).filter(p => p.status === 'out');
+
+  if (!outPlayers.length) {
+    container.innerHTML = '<div class="out-empty">✅ Nenhum player fora da área no momento.</div>';
+    return;
+  }
+
+  // Sort by time out desc
+  outPlayers.sort((a, b) => (a.outSince || 0) - (b.outSince || 0));
+
+  container.innerHTML = '';
+  outPlayers.forEach(p => {
+    const elapsed = p.outSince ? Math.floor((Date.now() - p.outSince) / 1000) : 0;
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    const timerStr = mins > 0 ? `${mins}m${String(secs).padStart(2,'0')}s` : `${elapsed}s`;
+    const color = CLASS_COLOR[p.class_id] || 'var(--text-mid)';
+    const card = document.createElement('div');
+    card.className = 'out-player-card';
+    card.innerHTML = `
+      <div class="out-avatar" style="color:${color}">${CLASS_ICON[p.class_id]||'?'}</div>
+      <div class="out-info">
+        <div class="out-name">${p.name}</div>
+        <div class="out-class">${CLASS_NAME[p.class_id]||'?'} · <span style="color:${p.guild===allyGuildName?'var(--ally)':'var(--enemy)'}">${p.guild||'—'}</span></div>
+      </div>
+      <div style="text-align:right;">
+        <div class="out-timer" id="outtimer_${p.name}">${timerStr}</div>
+        <div class="out-timer-lbl">fora da área</div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+// ── RANKINGS ──────────────────────────────────
+function renderRankings() {
+  renderRankList('rankDmgList',  rankDmg,  'var(--dmg-col)');
+  renderRankList('rankHealList', rankHeal, 'var(--heal-col)');
+  renderRankList('rankCritList', rankCrit, 'var(--crit-col)');
+  renderRankList('rankRecvList', rankRecv, 'var(--recv-col)');
+}
+
+function renderRankList(containerId, rows, color) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  if (!rows || !rows.length) {
+    c.innerHTML = '<div class="empty-msg">Sem dados ainda.</div>';
+    return;
+  }
+  c.innerHTML = '';
+  rows.forEach((r, i) => {
+    const rank = i + 1;
+    const pct  = (r.bar_pct || 0).toFixed(1);
+    const cid  = r.class_id;
+    const row  = document.createElement('div');
+    row.className = 'rank-row';
+    row.innerHTML = `
+      <div class="rank-bar-bg" style="width:${pct}%;background:${color}"></div>
+      <div class="rank-bar"    style="width:${pct}%;background:${color}"></div>
+      <div class="rank-num ${rank===1?'r1':rank===2?'r2':rank===3?'r3':''}">${rank}</div>
+      <div class="rank-avatar" style="color:${CLASS_COLOR[cid]||'var(--text-mid)'};">${CLASS_ICON[cid]||'?'}</div>
+      <div class="rank-info">
+        <div class="rank-name">${r.name}</div>
+        <div class="rank-sub">${CLASS_NAME[cid]||''}${r.guild?' · '+r.guild:''}</div>
+      </div>
+      <div class="rank-val" style="color:${color}">${r.val}</div>`;
+    c.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════
+function showAlert(msg, cls) {
+  const toast = document.getElementById('alertToast');
+  const item  = document.createElement('div');
+  item.className = `alert-item ${cls}`;
+  item.textContent = msg;
+  toast.appendChild(item);
+  setTimeout(() => { if (item.parentNode) item.parentNode.removeChild(item); }, 4500);
+}
+
+// ═══════════════════════════════════════════════════
+// CONFIG MODAL
+// ═══════════════════════════════════════════════════
+function openConfig() {
+  document.getElementById('inputAlly').value  = allyGuildName;
+  document.getElementById('inputEnemy').value = enemyGuildName;
+  document.getElementById('configModal').style.display = 'flex';
+}
+function closeConfig() {
+  document.getElementById('configModal').style.display = 'none';
+}
+function saveConfig() {
+  allyGuildName  = document.getElementById('inputAlly').value.trim()  || 'ALIADOS';
+  enemyGuildName = document.getElementById('inputEnemy').value.trim() || 'INIMIGOS';
+  localStorage.setItem('gxg_ally',  allyGuildName);
+  localStorage.setItem('gxg_enemy', enemyGuildName);
+  closeConfig();
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════
+// RESET / SAVE
+// ═══════════════════════════════════════════════════
+async function resetAll() {
+  if (!confirm('Resetar todos os dados GxG?')) return;
+  // Zera dados locais
+  playerRegistry = {};
+  rankDmg = []; rankHeal = []; rankCrit = []; rankRecv = [];
+  outTimers = {};
+  renderAll();
+  // Notifica o servidor para zerar o snapshot remoto também
+  // (quem assiste pelo link também verá tudo zerado)
+  try {
+    await fetch('https://servidorws.onrender.com/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'gxg_reset' })
+    });
+  } catch(e) { /* silencia erro de rede */ }
+}
+function resetRanks() {
+  if (!confirm('Resetar apenas os rankings?')) return;
+  rankDmg = []; rankHeal = []; rankCrit = []; rankRecv = [];
+  renderRankings();
+}
+function saveRanking() {
+  const ts = document.getElementById('clock').textContent;
+  let lines = [`⚔ GxG Dashboard — Rankings — ${ts}`, '='.repeat(55)];
+  const sections = [
+    ['DANO CAUSADO', rankDmg],
+    ['CURA (HEAL)',  rankHeal],
+    ['MAIOR CRÍTICO', rankCrit],
+    ['DANO RECEBIDO', rankRecv],
+  ];
+  sections.forEach(([label, rows]) => {
+    lines.push('', `[ ${label} ]`);
+    rows.forEach((r,i) => {
+      lines.push(`${String(i+1).padStart(2)}. ${r.name.padEnd(20)}  ${String(r.val).padStart(10)}`);
+    });
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `gxg_rankings_${ts.replace(/:/g,'')}.txt`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════
+// TAB SWITCH
+// ═══════════════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+  ['presenca','fora','rank'].forEach(t => {
+    const p = document.getElementById('page'+cap(t));
+    const b = document.getElementById('tab'+cap(t));
+    if (p) p.classList.toggle('active', t===tab);
+    if (b) {
+      b.className = 'tab-btn';
+      if (t===tab) b.classList.add(t==='fora'?'active-out':t==='rank'?'active-rank':'active');
+    }
+  });
+  if (tab==='presenca') renderPlayers();
+  if (tab==='fora')     renderFora();
+  if (tab==='rank')     renderRankings();
+}
+function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function fmtNum(n) {
+  if (n === undefined || n === null) return '—';
+  return Number(n).toLocaleString('pt-BR');
+}
+
+// ═══════════════════════════════════════════════════
+// STATUS — chamado pelo tracker via pywebview js_api
+// ═══════════════════════════════════════════════════
+function setStatus(online) {
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  if (!dot || !text) return;
+  if (online) {
+    dot.classList.add('online');
+    text.textContent = 'ONLINE';
+  } else {
+    dot.classList.remove('online');
+    text.textContent = 'OFFLINE';
+  }
+}
+
+// Chamado pelo tracker após salvar arquivo
+function onSaveResult(ok, msg) {
+  showAlert(ok ? ('💾 Salvo: ' + msg) : ('❌ Erro: ' + msg), ok ? 'alert-back' : 'alert-dead');
+}
+
+// ═══════════════════════════════════════════════════
+// LIVE TIMERS (update "fora" counters every second)
+// ═══════════════════════════════════════════════════
+setInterval(() => {
+  // Live update out-timer display if on that tab
+  if (currentTab === 'fora') {
+    Object.values(playerRegistry).filter(p => p.status === 'out').forEach(p => {
+      const el = document.getElementById('outtimer_' + p.name);
+      if (el && p.outSince) {
+        const elapsed = Math.floor((Date.now() - p.outSince) / 1000);
+        const mins = Math.floor(elapsed/60);
+        const secs = elapsed % 60;
+        el.textContent = mins > 0 ? `${mins}m${String(secs).padStart(2,'0')}s` : `${elapsed}s`;
+      }
+    });
+  }
+
+  // Auto-mark as 'out' if outTimers exist >= 15s but not yet flagged
+  const now = Date.now();
+  Object.entries(outTimers).forEach(([name, since]) => {
+    const p = playerRegistry[name];
+    if (p && p.status !== 'dead') {
+      const elapsed = (now - since) / 1000;
+      if (elapsed >= 15 && p.status !== 'out') {
+        p.status = 'out';
+        p.outSince = since;
+        showAlert(`🚪 ${name} saiu da área (${elapsed.toFixed(0)}s)`, 'alert-out');
+        renderAll();
+      }
+    }
+  });
+}, 1000);
+
+// ═══════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════
+setInterval(() => {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    [d.getHours(), d.getMinutes(), d.getSeconds()]
+      .map(n => String(n).padStart(2,'0')).join(':');
+}, 1000);
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+});
+</script>
+
+<!-- Remote polling -->
+<script>
+(function() {
+  const REMOTE_URL = 'https://servidorws.onrender.com/live';
+  const POLL_MS    = 1000;
+  if (window.pywebview) return;
+
+  const banner = document.getElementById('remoteBanner');
+  let noDataTimer = null;
+
+  function showOffline() { if (banner) banner.style.display = 'block'; }
+  function hideOffline() { if (banner) banner.style.display = 'none'; clearTimeout(noDataTimer); }
+
+  noDataTimer = setTimeout(showOffline, 3000);
+
+  async function poll() {
+    try {
+      const r = await fetch(REMOTE_URL, { cache: 'no-store' });
+      if (r.status === 204) {
+        showOffline();
+      } else if (r.ok) {
+        const d = await r.json();
+        // Checa flag de reset: se o operador resetou, zera dados locais também
+        if (d.reset === true) {
+          playerRegistry = {};
+          rankDmg = []; rankHeal = []; rankCrit = []; rankRecv = [];
+          outTimers = {};
+          if (typeof renderAll === 'function') renderAll();
+          showAlert('↺ Reset pelo operador', 'alert-back');
+        }
+        if (d.ok && d.snapshot) {
+          hideOffline();
+          document.getElementById('statusDot').classList.add('online');
+          document.getElementById('statusText').textContent = 'ONLINE';
+          if (typeof onPythonPush === 'function') onPythonPush(d.snapshot);
+        }
+      }
+    } catch(e) {
+      showOffline();
+    }
+  }
+
+  poll();
+  setInterval(poll, POLL_MS);
+})();
+</script>
+</body>
+</html>
