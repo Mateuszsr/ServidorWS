@@ -177,6 +177,24 @@
   .gcc-ally  .gcc-count { color:var(--ally); }
   .gcc-enemy .gcc-count { color:var(--enemy); }
   .gcc-sub { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; margin-top:2px; }
+  .gcc-status-row { display:flex; gap:5px; margin-top:8px; margin-bottom:4px; }
+  .gcc-stat-chip {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:5px 4px; border-radius:4px; border:1px solid transparent; gap:1px;
+  }
+  .gcc-stat-alive { background:rgba(0,229,160,.10); border-color:rgba(0,229,160,.30); }
+  .gcc-stat-dead  { background:rgba(224,48,80,.10);  border-color:rgba(224,48,80,.30); }
+  .gcc-stat-out   { background:rgba(255,187,51,.10); border-color:rgba(255,187,51,.30); }
+  .gcc-stat-val {
+    font-family:'Orbitron',sans-serif; font-size:18px; font-weight:900; line-height:1;
+  }
+  .gcc-stat-alive .gcc-stat-val { color:var(--green); }
+  .gcc-stat-dead  .gcc-stat-val { color:var(--accent2); }
+  .gcc-stat-out   .gcc-stat-val { color:var(--out-col); }
+  .gcc-stat-lbl {
+    font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px;
+    color:var(--text-mid); font-weight:700;
+  }
   .gcc-classes { display:flex; flex-wrap:wrap; gap:3px; margin-top:6px; }
   .gcc-class-chip {
     font-size:9px; font-family:'Share Tech Mono',monospace;
@@ -301,6 +319,14 @@
   }
   .rank-tab:hover { color:var(--text-mid); }
   .rank-tab.active { color:var(--gold); background:#2e220866; border-color:var(--gold2); }
+  .rank-filter-btn {
+    font-size:10px; font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:.5px;
+    padding:3px 10px; border-radius:3px; cursor:pointer;
+    color:var(--text-dim); background:var(--bg-card); border:1px solid var(--border);
+    transition:all .15s;
+  }
+  .rank-filter-btn:hover { color:var(--text-mid); border-color:var(--text-mid); }
+  .rank-filter-btn.active { color:var(--gold); border-color:var(--gold2); background:#2e220866; }
   .rank-list { max-height:300px; overflow-y:auto; }
   .rank-row {
     display:flex; align-items:center; padding:6px 12px;
@@ -440,7 +466,11 @@
           <span style="color:var(--text-mid);font-size:9px;">🔵 ALIADA</span>
         </div>
         <div class="gcc-count" id="gccAllyCount">0</div>
-        <div class="gcc-sub" id="gccAllySubtitle">0 vivos · 0 mortos · 0 fora</div>
+        <div class="gcc-status-row" id="gccAllySubtitle">
+          <div class="gcc-stat-chip gcc-stat-alive"><span class="gcc-stat-val" id="gccAllyVivos">0</span><span class="gcc-stat-lbl">VIVOS</span></div>
+          <div class="gcc-stat-chip gcc-stat-dead"><span class="gcc-stat-val" id="gccAllyMortos">0</span><span class="gcc-stat-lbl">MORTOS</span></div>
+          <div class="gcc-stat-chip gcc-stat-out"><span class="gcc-stat-val" id="gccAllyFora">0</span><span class="gcc-stat-lbl">FORA</span></div>
+        </div>
         <div class="gcc-classes" id="gccAllyClasses"></div>
       </div>
     </div>
@@ -452,29 +482,13 @@
           <span style="color:var(--text-mid);font-size:9px;">🔴 INIMIGA</span>
         </div>
         <div class="gcc-count" id="gccEnemyCount">0</div>
-        <div class="gcc-sub" id="gccEnemySubtitle">0 vivos · 0 mortos · 0 fora</div>
+        <div class="gcc-status-row" id="gccEnemySubtitle">
+          <div class="gcc-stat-chip gcc-stat-alive"><span class="gcc-stat-val" id="gccEnemyVivos">0</span><span class="gcc-stat-lbl">VIVOS</span></div>
+          <div class="gcc-stat-chip gcc-stat-dead"><span class="gcc-stat-val" id="gccEnemyMortos">0</span><span class="gcc-stat-lbl">MORTOS</span></div>
+          <div class="gcc-stat-chip gcc-stat-out"><span class="gcc-stat-val" id="gccEnemyFora">0</span><span class="gcc-stat-lbl">FORA</span></div>
+        </div>
         <div class="gcc-classes" id="gccEnemyClasses"></div>
       </div>
-    </div>
-  </div>
-
-  <!-- PLAYERS PRESENÇA -->
-  <div class="players-summary-bar">
-    <div class="ps-total">
-      <div class="ps-total-lbl">PLAYERS DETECTADOS</div>
-      <div class="ps-total-num" id="psTotalNum">0</div>
-    </div>
-    <div class="ps-stat">
-      <div class="ps-stat-val" style="color:var(--green)" id="psVivosNum">0</div>
-      <div class="ps-stat-lbl">VIVOS</div>
-    </div>
-    <div class="ps-stat">
-      <div class="ps-stat-val" style="color:var(--accent2)" id="psMortosNum">0</div>
-      <div class="ps-stat-lbl">MORTOS</div>
-    </div>
-    <div class="ps-stat">
-      <div class="ps-stat-val" style="color:var(--out-col)" id="psForaNum">0</div>
-      <div class="ps-stat-lbl">FORA DA ÁREA</div>
     </div>
   </div>
 
@@ -500,6 +514,12 @@
 ════════════════════════════════════════ -->
 <div class="page" id="pageRank">
   <div class="action-bar">
+    <div style="display:flex;gap:4px;margin-right:auto;align-items:center;">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);margin-right:4px;">FILTRO:</span>
+      <button class="rank-filter-btn active" id="filterBtnAll"   onclick="setRankFilter('all')">TODOS</button>
+      <button class="rank-filter-btn"        id="filterBtnAlly"  onclick="setRankFilter('ally')"  id="filterBtnAlly">🔵 <span id="filterAllyLabel">ALIADOS</span></button>
+      <button class="rank-filter-btn"        id="filterBtnEnemy" onclick="setRankFilter('enemy')">🔴 <span id="filterEnemyLabel">INIMIGOS</span></button>
+    </div>
     <button class="action-btn" onclick="saveRanking()">💾 Exportar TXT</button>
     <button class="action-btn danger" onclick="resetRanks()">↺ Reset Rankings</button>
   </div>
@@ -596,9 +616,10 @@ const CLASS_COLOR = {
 // ═══════════════════════════════════════════════════
 let currentTab = 'presenca';
 let _classGroupOpen = {};
+let rankFilter = 'all'; // 'all' | 'ally' | 'enemy'
 
 // Guild config
-let allyGuildName  = localStorage.getItem('gxg_ally')  || 'FIRE';
+let allyGuildName  = localStorage.getItem('gxg_ally')  || 'ALIADOS';
 let enemyGuildName = localStorage.getItem('gxg_enemy') || 'INIMIGOS';
 
 // Player registry: persists all players seen
@@ -787,7 +808,7 @@ function renderAll() {
   if (currentTab === 'rank')     renderRankings();
 
   // Update tab badges
-  const outCount = Object.values(playerRegistry).filter(p => p.status === 'out').length;
+  const outCount = Object.values(playerRegistry).filter(p => p.status === 'out' && p.guild === allyGuildName).length;
   document.getElementById('badgePresenca').textContent = Object.keys(playerRegistry).length;
   document.getElementById('badgeFora').textContent = outCount;
 }
@@ -862,8 +883,12 @@ function updateTug() {
   // Guild counters
   document.getElementById('gccAllyCount').textContent = allyAlive;
   document.getElementById('gccEnemyCount').textContent = enemyAlive;
-  document.getElementById('gccAllySubtitle').textContent = `${allyAlive} vivos · ${allyDead} mortos · ${allyOut} fora`;
-  document.getElementById('gccEnemySubtitle').textContent = `${enemyAlive} vivos · ${enemyDead} mortos · ${enemyOut} fora`;
+  document.getElementById('gccAllyVivos').textContent  = allyAlive;
+  document.getElementById('gccAllyMortos').textContent = allyDead;
+  document.getElementById('gccAllyFora').textContent   = allyOut;
+  document.getElementById('gccEnemyVivos').textContent  = enemyAlive;
+  document.getElementById('gccEnemyMortos').textContent = enemyDead;
+  document.getElementById('gccEnemyFora').textContent   = enemyOut;
 
   // Class chips
   function buildClassChips(container, countObj) {
@@ -882,11 +907,7 @@ function updateTug() {
 
 // ── SUMMARY ──────────────────────────────────
 function updateSummary() {
-  const all = Object.values(playerRegistry);
-  document.getElementById('psTotalNum').textContent  = all.length;
-  document.getElementById('psVivosNum').textContent  = all.filter(p=>p.status==='alive').length;
-  document.getElementById('psMortosNum').textContent = all.filter(p=>p.status==='dead').length;
-  document.getElementById('psForaNum').textContent   = all.filter(p=>p.status==='out').length;
+  // Summary bar foi removida; mantém função para compatibilidade
 }
 
 // ── PLAYERS (Presença) ────────────────────────
@@ -896,7 +917,7 @@ function renderPlayers() {
 
   // Group by class
   const byClass = {};
-  all.forEach(p => {
+  all.filter(p => p.status !== 'out').forEach(p => {
     if (!byClass[p.class_id]) byClass[p.class_id] = [];
     byClass[p.class_id].push(p);
   });
@@ -960,7 +981,6 @@ function renderPlayers() {
 
         let statusBadgeHtml = '';
         if (p.status === 'dead') statusBadgeHtml = '<span class="status-badge badge-dead">☠ MORREU</span>';
-        else if (p.status === 'out') statusBadgeHtml = '<span class="status-badge badge-out">🚪 FORA DA ÁREA</span>';
 
         let hpRightHtml = '';
         if (p.status !== 'dead') {
@@ -1003,10 +1023,10 @@ function renderPlayers() {
 // ── FORA DA ÁREA ──────────────────────────────
 function renderFora() {
   const container = document.getElementById('foraContainer');
-  const outPlayers = Object.values(playerRegistry).filter(p => p.status === 'out');
+  const outPlayers = Object.values(playerRegistry).filter(p => p.status === 'out' && p.guild === allyGuildName);
 
   if (!outPlayers.length) {
-    container.innerHTML = '<div class="out-empty">✅ Nenhum player fora da área no momento.</div>';
+    container.innerHTML = `<div class="out-empty">✅ Nenhum player de ${allyGuildName} fora da área no momento.</div>`;
     return;
   }
 
@@ -1037,11 +1057,37 @@ function renderFora() {
 }
 
 // ── RANKINGS ──────────────────────────────────
+function setRankFilter(f) {
+  rankFilter = f;
+  ['all','ally','enemy'].forEach(k => {
+    const btn = document.getElementById('filterBtn' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (btn) btn.classList.toggle('active', k === f);
+  });
+  // Update label names in case guild names changed
+  const allyLbl = document.getElementById('filterAllyLabel');
+  const enemyLbl = document.getElementById('filterEnemyLabel');
+  if (allyLbl)  allyLbl.textContent  = allyGuildName;
+  if (enemyLbl) enemyLbl.textContent = enemyGuildName;
+  renderRankings();
+}
+
+function _applyRankFilter(rows) {
+  if (rankFilter === 'all') return rows;
+  const guildName = rankFilter === 'ally' ? allyGuildName : enemyGuildName;
+  return rows.filter(r => r.guild === guildName);
+}
+
 function renderRankings() {
-  renderRankList('rankDmgList',  rankDmg,  'var(--dmg-col)');
-  renderRankList('rankHealList', rankHeal, 'var(--heal-col)');
-  renderRankList('rankCritList', rankCrit, 'var(--crit-col)');
-  renderRankList('rankRecvList', rankRecv, 'var(--recv-col)');
+  // Sync filter button labels with current guild names
+  const allyLbl = document.getElementById('filterAllyLabel');
+  const enemyLbl = document.getElementById('filterEnemyLabel');
+  if (allyLbl)  allyLbl.textContent  = allyGuildName;
+  if (enemyLbl) enemyLbl.textContent = enemyGuildName;
+
+  renderRankList('rankDmgList',  _applyRankFilter(rankDmg),  'var(--dmg-col)');
+  renderRankList('rankHealList', _applyRankFilter(rankHeal), 'var(--heal-col)');
+  renderRankList('rankCritList', _applyRankFilter(rankCrit), 'var(--crit-col)');
+  renderRankList('rankRecvList', _applyRankFilter(rankRecv), 'var(--recv-col)');
 }
 
 function renderRankList(containerId, rows, color) {
@@ -1131,23 +1177,26 @@ function resetRanks() {
 }
 function saveRanking() {
   const ts = document.getElementById('clock').textContent;
-  let lines = [`⚔ GxG Dashboard — Rankings — ${ts}`, '='.repeat(55)];
+  const filterLabel = rankFilter === 'ally' ? allyGuildName : rankFilter === 'enemy' ? enemyGuildName : 'TODOS';
+  let lines = [`⚔ GxG Dashboard — Rankings — ${ts}`, `Filtro: ${filterLabel}`, '='.repeat(55)];
   const sections = [
-    ['DANO CAUSADO', rankDmg],
-    ['CURA (HEAL)',  rankHeal],
-    ['MAIOR CRÍTICO', rankCrit],
-    ['DANO RECEBIDO', rankRecv],
+    ['DANO CAUSADO',  _applyRankFilter(rankDmg)],
+    ['CURA (HEAL)',   _applyRankFilter(rankHeal)],
+    ['MAIOR CRÍTICO', _applyRankFilter(rankCrit)],
+    ['DANO RECEBIDO', _applyRankFilter(rankRecv)],
   ];
   sections.forEach(([label, rows]) => {
     lines.push('', `[ ${label} ]`);
+    if (!rows.length) { lines.push('  (sem dados)'); return; }
     rows.forEach((r,i) => {
-      lines.push(`${String(i+1).padStart(2)}. ${r.name.padEnd(20)}  ${String(r.val).padStart(10)}`);
+      lines.push(`${String(i+1).padStart(2)}. ${r.name.padEnd(20)}  ${String(r.val).padStart(10)}  ${r.guild||''}`);
     });
   });
   const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `gxg_rankings_${ts.replace(/:/g,'')}.txt`;
+  const suffix = rankFilter !== 'all' ? `_${filterLabel.toLowerCase()}` : '';
+  a.download = `gxg_rankings_${ts.replace(/:/g,'')}${suffix}.txt`;
   a.click();
 }
 
