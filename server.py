@@ -77,7 +77,7 @@ MEMORY_CONFIG = {
 
     # ── IDs de player que recebem multiplicador x2 no dano ──
     # Adicione aqui os IDs numéricos (MY_PLAYER_ID / MY_PLAYER_ID_2 no cliente)
-    "DOUBLE_DAMAGE_IDS": [0, 0],  # substitua pelos IDs reais
+    "DOUBLE_DAMAGE_IDS": [5988093, 0],  # substitua pelos IDs reais
 
     # ── Tabela autoritativa de guilds confirmadas ──
     # Chave  = nome exato da guild (case-sensitive, igual ao que o jogo retorna)
