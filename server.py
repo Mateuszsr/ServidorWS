@@ -75,6 +75,10 @@ MEMORY_CONFIG = {
     "DAMAGE_VALUE_OFF":       0x04,
     "DAMAGE_ID_OFF":          0x08,
 
+    # ── IDs de player que recebem multiplicador x2 no dano ──
+    # Adicione aqui os IDs numéricos (MY_PLAYER_ID / MY_PLAYER_ID_2 no cliente)
+    "DOUBLE_DAMAGE_IDS": [0, 0],  # substitua pelos IDs reais
+
     # ── Tabela autoritativa de guilds confirmadas ──
     # Chave  = nome exato da guild (case-sensitive, igual ao que o jogo retorna)
     # id_a   = guild_id numérico confirmado (lido via OFF_GUILD_ID → +0x08)
