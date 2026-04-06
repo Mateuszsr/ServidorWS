@@ -300,6 +300,39 @@
   .reset-btn { background:var(--bg-hover);border:1px solid var(--border);color:var(--text-mid);padding:3px 10px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;transition:all .15s; }
   .reset-btn:hover { color:var(--gold);border-color:var(--gold2); }
 
+  /* ── LACAIOS SECTION ── */
+  --minion: #b06ef5;
+  --minion-dim: #2a1540;
+  .minion-section { background:var(--bg-card); border:1px solid #6b3fa0; border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .minion-header { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; background:var(--bg-panel); border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+  .minion-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:#b06ef5; display:flex; align-items:center; gap:6px; }
+  .minion-stats-row { display:flex; gap:8px; }
+  .minion-stat-pill { padding:2px 8px; border-radius:3px; font-family:'Share Tech Mono',monospace; font-size:10px; font-weight:700; }
+  .minion-stat-with { background:rgba(176,110,245,.18); color:#b06ef5; border:1px solid #6b3fa0; }
+  .minion-stat-without { background:rgba(224,80,80,.12); color:var(--accent2); border:1px solid var(--accent); }
+  .minion-body { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+  .minion-col { overflow:hidden; }
+  .minion-col-header { padding:5px 10px; font-family:'Orbitron',sans-serif; font-size:9px; font-weight:700; letter-spacing:1px; border-bottom:1px solid var(--border2); display:flex; align-items:center; gap:5px; }
+  .minion-col-with    { color:#b06ef5; background:rgba(176,110,245,.06); border-right:1px solid var(--border2); }
+  .minion-col-without { color:var(--accent2); background:rgba(224,80,80,.04); }
+  .minion-player-row { display:flex; align-items:flex-start; padding:4px 10px; border-bottom:1px solid var(--border2); gap:7px; transition:background .1s; }
+  .minion-player-row:last-child { border-bottom:none; }
+  .minion-player-row:hover { background:var(--bg-hover); }
+  .minion-player-cls { width:22px; height:22px; border-radius:2px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; font-family:'Share Tech Mono',monospace; font-size:10px; flex-shrink:0; border:1px solid var(--border); }
+  .minion-player-info { flex:1; min-width:0; }
+  .minion-player-name { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .minion-player-sub  { font-size:9px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; margin-top:1px; }
+  .minion-tags { display:flex; gap:3px; flex-wrap:wrap; margin-top:3px; }
+  .minion-tag { font-size:9px; padding:1px 5px; border-radius:2px; font-family:'Share Tech Mono',monospace; font-weight:700; background:rgba(176,110,245,.18); color:#b06ef5; border:1px solid #6b3fa0; white-space:nowrap; }
+  .minion-list { max-height:220px; overflow-y:auto; }
+  .minion-list::-webkit-scrollbar { width:4px; }
+  .minion-list::-webkit-scrollbar-track { background:var(--bg-void); }
+  .minion-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+  .minion-empty { padding:16px; text-align:center; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:10px; }
+  .minion-toggle-icon { font-size:10px; color:var(--text-dim); margin-left:4px; transition:transform .2s; }
+  .minion-section.collapsed .minion-body { display:none; }
+  .minion-section.collapsed .minion-toggle-icon { transform:rotate(-90deg); }
+
   .footer { background:var(--bg-panel);border-top:1px solid var(--border);padding:4px 16px;display:flex;justify-content:space-between;align-items:center;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);position:sticky;bottom:0; }
 
   @media (max-width:600px) { .fac-panels,.spotlight-row,.buff-spotlight { grid-template-columns:1fr; } }
@@ -364,6 +397,38 @@
       </div>
     </div>
     <div class="rank-list" id="warRankList"></div>
+  </div>
+
+  <!-- ── LACAIOS ── -->
+  <div class="minion-section" id="minionSection">
+    <div class="minion-header" onclick="toggleMinionSection()">
+      <div class="minion-title">
+        🐾 LACAIOS
+        <span class="minion-toggle-icon" id="minionToggleIcon">▼</span>
+      </div>
+      <div class="minion-stats-row">
+        <span class="minion-stat-pill minion-stat-with"  id="minionWithCount">0 com lacaio</span>
+        <span class="minion-stat-pill minion-stat-without" id="minionWithoutCount">0 sem lacaio</span>
+      </div>
+    </div>
+    <div style="padding:6px 10px;border-bottom:1px solid var(--border2);background:var(--bg-panel);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <span style="font-size:10px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;white-space:nowrap">GUILDA:</span>
+      <div class="guild-filter-pills" id="minionGuildPills"></div>
+    </div>
+    <div class="minion-body">
+      <div class="minion-col">
+        <div class="minion-col-header minion-col-with">🐾 COM LACAIO</div>
+        <div class="minion-list" id="minionWithList">
+          <div class="minion-empty">Aguardando dados...</div>
+        </div>
+      </div>
+      <div class="minion-col">
+        <div class="minion-col-header minion-col-without">✖ SEM LACAIO</div>
+        <div class="minion-list" id="minionWithoutList">
+          <div class="minion-empty">Aguardando dados...</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -696,6 +761,9 @@ function onPythonPush(data) {
   // Badge de guildas (só recalcula uma vez por push)
   const guildsData = buildGuildData();
   document.getElementById('guildBadge').textContent = guildsData.length;
+
+  // Lacaios — renderiza apenas na aba war, mas sempre atualiza os dados
+  if (data.minions) renderMinionSection(data.minions);
 
   if (currentTab === 'war') {
     updateWarTug();
@@ -1372,6 +1440,97 @@ function updateBoss() {
   document.getElementById('bossTopCrit').textContent  = critRows[0]?.val||'—';
   if(topDmg){ document.getElementById('pveTopDmgName').textContent=topDmg.name; document.getElementById('pveTopDmgClass').textContent=`${topDmg.class_name} · ${topDmg.guild}`; document.getElementById('pveTopDmgVal').textContent=topDmg.val; }
   if(focP)  { document.getElementById('pveFocusName').textContent=focP.name; document.getElementById('pveFocusClass').textContent=`${focP.class_name} · ${focP.guild}`; document.getElementById('pveFocusRecv').textContent=`${focP.val} recebido`; }
+}
+
+// ═══════════════════════════════════════════════════
+// LACAIOS
+// ═══════════════════════════════════════════════════
+let _lastMinionFp = '';
+let _minionGuild  = '__all__';
+let _lastMinionData = [];
+
+function toggleMinionSection() {
+  const sec = document.getElementById('minionSection');
+  sec.classList.toggle('collapsed');
+}
+
+function _renderMinionLists(minions) {
+  const filtered = _minionGuild === '__all__'
+    ? minions
+    : minions.filter(p => p.guild === _minionGuild);
+
+  const withMinion    = filtered.filter(p => p.has_minion);
+  const withoutMinion = filtered.filter(p => !p.has_minion);
+
+  // Atualiza pills de contagem
+  document.getElementById('minionWithCount').textContent    = `${withMinion.length} com lacaio`;
+  document.getElementById('minionWithoutCount').textContent = `${withoutMinion.length} sem lacaio`;
+
+  // Renderiza coluna COM lacaio
+  const withList = document.getElementById('minionWithList');
+  withList.innerHTML = '';
+  if (!withMinion.length) {
+    withList.innerHTML = '<div class="minion-empty">Nenhum lacaio ativo</div>';
+  } else {
+    withMinion.forEach(p => {
+      const fc  = facCls(p.faccao);
+      const row = document.createElement('div');
+      row.className = 'minion-player-row';
+      const tags = p.minions.map(m => {
+        const hpPct = m.max_hp > 0 ? Math.round(m.cur_hp / m.max_hp * 100) : 0;
+        const hpCol = hpPct > 60 ? 'var(--sent)' : hpPct > 30 ? 'var(--gold)' : 'var(--accent2)';
+        return `<span class="minion-tag" title="${m.name} — HP ${hpPct}%">${m.name} <span style="color:${hpCol};font-size:8px">${hpPct}%</span></span>`;
+      }).join('');
+      row.innerHTML = `
+        <div class="minion-player-cls ${fc}">${CLASS_ICON[p.class_id]||'?'}</div>
+        <div class="minion-player-info">
+          <div class="minion-player-name ${fc}">${p.name}</div>
+          <div class="minion-player-sub">${p.class_name}${p.guild ? ' · ' + p.guild : ''}</div>
+          <div class="minion-tags">${tags}</div>
+        </div>`;
+      withList.appendChild(row);
+    });
+  }
+
+  // Renderiza coluna SEM lacaio
+  const withoutList = document.getElementById('minionWithoutList');
+  withoutList.innerHTML = '';
+  if (!withoutMinion.length) {
+    withoutList.innerHTML = '<div class="minion-empty">Todos com lacaio ativo</div>';
+  } else {
+    withoutMinion.forEach(p => {
+      const fc  = facCls(p.faccao);
+      const row = document.createElement('div');
+      row.className = 'minion-player-row';
+      row.innerHTML = `
+        <div class="minion-player-cls ${fc}" style="opacity:.5">${CLASS_ICON[p.class_id]||'?'}</div>
+        <div class="minion-player-info">
+          <div class="minion-player-name" style="color:var(--text-mid)">${p.name}</div>
+          <div class="minion-player-sub">${p.class_name}${p.guild ? ' · ' + p.guild : ''}</div>
+        </div>`;
+      withoutList.appendChild(row);
+    });
+  }
+}
+
+function renderMinionSection(minions) {
+  if (!minions) return;
+  _lastMinionData = minions;
+
+  // Fingerprint para evitar re-render desnecessário
+  const fp = _minionGuild + JSON.stringify(minions.map(p=>p.name+p.has_minion+(p.minions||[]).length));
+  if (fp === _lastMinionFp) return;
+  _lastMinionFp = fp;
+
+  // Atualiza pills de guilda
+  const guilds = [...new Set(minions.map(p => p.guild).filter(Boolean))].sort();
+  buildGuildPills('minionGuildPills', guilds, _minionGuild, g => {
+    _minionGuild = g;
+    _lastMinionFp = ''; // força re-render
+    _renderMinionLists(_lastMinionData);
+  });
+
+  _renderMinionLists(minions);
 }
 
 // ═══════════════════════════════════════════════════
