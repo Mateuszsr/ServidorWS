@@ -467,49 +467,6 @@ body {
 .col-guild  { color:var(--guild-col) !important; }
 .col-gold   { color:var(--gold) !important; }
 
-/* ═══ ACTION BUTTONS ═══ */
-.action-bar {
-  display:flex;
-  gap:8px;
-  padding:8px 14px;
-  background:var(--bg-panel);
-  border-bottom:1px solid var(--border);
-  flex-shrink:0;
-}
-.btn-action {
-  flex:1;
-  padding:8px 10px;
-  border-radius:8px;
-  font-family:'Orbitron',sans-serif;
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:.8px;
-  cursor:pointer;
-  border:1px solid;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  transition:all .15s;
-  user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
-.btn-action:active { transform:scale(.96); }
-.btn-save {
-  background:rgba(0,229,160,.08);
-  border-color:rgba(0,229,160,.4);
-  color:var(--sent);
-}
-.btn-save:active { background:rgba(0,229,160,.18); }
-.btn-reset {
-  background:rgba(224,48,80,.08);
-  border-color:rgba(224,48,80,.4);
-  color:var(--accent2);
-}
-.btn-reset:active { background:rgba(224,48,80,.18); }
-.btn-action.flash-ok  { background:rgba(0,229,160,.3) !important; border-color:var(--sent) !important; }
-.btn-action.flash-err { background:rgba(224,48,80,.3) !important; border-color:var(--accent2) !important; }
-
 /* ═══ SECTION DIVIDER ═══ */
 .section-sep {
   font-family:'Orbitron',sans-serif;
@@ -523,6 +480,77 @@ body {
 }
 .section-sep::before, .section-sep::after {
   content:''; flex:1; height:1px; background:var(--border2);
+}
+
+/* ═══ ACTION BAR (Save / Reset) ═══ */
+.action-bar {
+  display:flex;
+  gap:8px;
+  padding:7px 14px;
+  background:var(--bg-panel);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.btn-act {
+  flex:1;
+  padding:9px 8px;
+  border-radius:9px;
+  font-family:'Orbitron',sans-serif;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.8px;
+  cursor:pointer;
+  border:1px solid;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  transition:background .12s, transform .1s;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;
+  overflow:hidden;
+}
+.btn-act:active { transform:scale(.95); }
+
+.btn-save {
+  background:rgba(0,229,160,.07);
+  border-color:rgba(0,229,160,.35);
+  color:var(--sent);
+}
+.btn-save:hover { background:rgba(0,229,160,.14); }
+
+.btn-reset {
+  background:rgba(224,48,80,.07);
+  border-color:rgba(224,48,80,.35);
+  color:var(--accent2);
+}
+.btn-reset:hover { background:rgba(224,48,80,.14); }
+
+/* flash de feedback */
+@keyframes flashGreen { 0%,100%{background:rgba(0,229,160,.07)} 40%{background:rgba(0,229,160,.3)} }
+@keyframes flashRed   { 0%,100%{background:rgba(224,48,80,.07)}  40%{background:rgba(224,48,80,.3)} }
+.btn-act.flash-ok  { animation:flashGreen .6s ease; }
+.btn-act.flash-err { animation:flashRed   .6s ease; }
+
+/* toast de feedback */
+#actionToast {
+  display:none;
+  position:fixed;
+  bottom:22px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;
+  padding:8px 20px;
+  border-radius:20px;
+  z-index:9999;
+  pointer-events:none;
+  white-space:nowrap;
+  letter-spacing:.4px;
 }
 </style>
 </head>
@@ -548,9 +576,12 @@ body {
 
 <!-- ACTION BAR -->
 <div class="action-bar">
-  <div class="btn-action btn-save" id="btnSave" onclick="doSave()">💾 SALVAR</div>
-  <div class="btn-action btn-reset" id="btnReset" onclick="doReset()">🗑 RESETAR</div>
+  <div class="btn-act btn-save" id="btnSave" onclick="doSave()">💾 SALVAR</div>
+  <div class="btn-act btn-reset" id="btnReset" onclick="doReset()">🗑 RESETAR</div>
 </div>
+
+<!-- toast -->
+<div id="actionToast"></div>
 
 <!-- SCROLL AREA -->
 <div class="scroll-area" id="scrollArea">
@@ -656,8 +687,8 @@ const CLASS_ICON = {
 // IDs reais por facção conforme CLASS_MAP do Python
 const CLASS_SENT = [1, 2, 3, 7, 13, 8, 9, 15, 19, 17];
 const CLASS_LEG  = [4, 5, 6, 10, 12, 11, 14, 18, 16, 20];
-const FAC_SENT   = 1;
-const FAC_LEG    = 2;
+const FAC_SENT   = 'SENTINELAS';
+const FAC_LEG    = 'LEGIÃO';
 
 // ═══════════════════════════════════════════════════
 // DRAWER TOGGLE
@@ -953,8 +984,11 @@ function renderRanking(snap) {
 // MINIONS
 // ═══════════════════════════════════════════════════
 function renderMinions(snap) {
-  const players = getFilteredPlayers(snap);
-  const minionData = snap.minions || players; // fallback
+  // Usa snap.minions (lista dedicada do Python) filtrada por guilda
+  const allMinions = snap.minions || [];
+  const players = _guild === 'ALL'
+    ? allMinions
+    : allMinions.filter(p => p.guild === _guild);
 
   const withM    = players.filter(p => p.has_minion || (p.minions && p.minions.length));
   const withoutM = players.filter(p => !p.has_minion && !(p.minions && p.minions.length));
@@ -1085,85 +1119,150 @@ function fmtNum(n) {
 // ═══════════════════════════════════════════════════
 // SAVE & RESET
 // ═══════════════════════════════════════════════════
-function _flashBtn(id, ok) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add(ok ? 'flash-ok' : 'flash-err');
-  setTimeout(() => el.classList.remove('flash-ok', 'flash-err'), 1200);
+
+let _toastTimer = null;
+function showToast(msg, ok) {
+  const el = document.getElementById('actionToast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.borderColor = ok ? 'var(--sent)' : 'var(--accent2)';
+  el.style.color        = ok ? 'var(--sent)' : 'var(--accent2)';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2500);
 }
 
-function doSave() {
-  if (!_snapshot) { _flashBtn('btnSave', false); return; }
+function flashBtn(id, ok) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('flash-ok', 'flash-err');
+  void el.offsetWidth; // force reflow
+  el.classList.add(ok ? 'flash-ok' : 'flash-err');
+  setTimeout(() => el.classList.remove('flash-ok', 'flash-err'), 650);
+}
 
+// ─── Monta o TXT do ranking ───────────────────────
+function buildRankingTxt(snap) {
+  const players = getAllPlayers(snap);
   const ts = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  const stamp = `${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())}_${pad(ts.getHours())}-${pad(ts.getMinutes())}-${pad(ts.getSeconds())}`;
-  const filename = `dmg_${stamp}.txt`;
+  const pad = n => String(n).padStart(2, '0');
+  const dateStr = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()} ${pad(ts.getHours())}:${pad(ts.getMinutes())}:${pad(ts.getSeconds())}`;
 
-  const players = getAllPlayers(_snapshot);
-  const field   = { dmg:'damage_dealt', recv:'damage_taken', crit:'crit_damage', heal:'heal_done' };
-  const label   = { dmg:'DAMAGE TOTAL', recv:'DANO RECEBIDO', crit:'CRÍTICO MÁXIMO', heal:'CURA TOTAL' };
+  const SEP  = '='.repeat(62);
+  const DASH = '─'.repeat(62);
 
-  function rankBlock(key) {
-    const f = field[key];
-    const sorted = [...players].filter(p => (p[f]||0) > 0).sort((a,b)=>(b[f]||0)-(a[f]||0));
-    if (!sorted.length) return `  Sem dados\n`;
-    return sorted.map((p,i) => {
-      const pct = sorted[0][f] > 0 ? (p[f]/sorted[0][f]*100).toFixed(1) : '0.0';
-      return `  ${String(i+1).padStart(2)}. ${p.name.padEnd(20)} [${(p.class_name||'?').padEnd(14)}]  ${fmtNum(p[f]||0).padStart(8)}  (${pct}%)`;
+  function rankBlock(title, fieldKey) {
+    const sorted = [...players]
+      .map(p => ({ name: p.name, cls: p.class_name || '?', val: p[fieldKey] || 0 }))
+      .filter(p => p.val > 0)
+      .sort((a, b) => b.val - a.val);
+
+    if (!sorted.length) return `  (sem dados)\n`;
+    const totalAll = sorted.reduce((s, p) => s + p.val, 0) || 1;
+    const maxVal   = sorted[0].val || 1;
+
+    return sorted.map((p, i) => {
+      const pct = (p.val / totalAll * 100).toFixed(1);
+      const bar = '█'.repeat(Math.round(p.val / maxVal * 12)).padEnd(12);
+      return `  ${String(i+1).padStart(2)}. ${p.name.padEnd(22)} [${p.cls.padEnd(12)}]  ${String(p.val.toLocaleString('pt-BR')).padStart(12)}  (${pct.padStart(5)}%)  ${bar}`;
     }).join('\n') + '\n';
   }
 
-  const sep = '='.repeat(60);
-  const dash = '─'.repeat(60);
   const lines = [
-    sep,
-    `  WARSPEAR TRACKER — ${ts.toLocaleString('pt-BR')}`,
-    sep,
-    '', dash, '  ⚔  DAMAGE TOTAL',     dash, rankBlock('dmg'),
-    '', dash, '  💥  CRÍTICO MÁXIMO',  dash, rankBlock('crit'),
-    '', dash, '  🛡  DANO RECEBIDO',   dash, rankBlock('recv'),
-    '', dash, '  💚  CURA TOTAL',      dash, rankBlock('heal'),
-    sep, '',
-  ].join('\n');
+    SEP,
+    `  ⚔  WARSPEAR ARINAR — RANKING COMPLETO`,
+    `  ${dateStr}`,
+    SEP,
+    '',
+    DASH,
+    '  ⚡  DANO TOTAL',
+    DASH,
+    rankBlock('dmg', 'damage_dealt'),
+    DASH,
+    '  💥  CRÍTICO MÁXIMO',
+    DASH,
+    rankBlock('crit', 'crit_damage'),
+    DASH,
+    '  🛡  DANO RECEBIDO',
+    DASH,
+    rankBlock('recv', 'damage_taken'),
+    DASH,
+    '  💚  CURA TOTAL',
+    DASH,
+    rankBlock('heal', 'heal_done'),
+    SEP,
+  ];
+  return lines.join('\n');
+}
+
+// ─── SALVAR ───────────────────────────────────────
+function doSave() {
+  if (!_snapshot) {
+    flashBtn('btnSave', false);
+    showToast('⚠ Sem dados para salvar', false);
+    return;
+  }
+
+  const txt = buildRankingTxt(_snapshot);
+  const ts  = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const filename = `ranking_${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())}_${pad(ts.getHours())}-${pad(ts.getMinutes())}-${pad(ts.getSeconds())}.txt`;
 
   if (window.pywebview) {
-    // Desktop: delega ao Python
-    pywebview.api.save_file(filename, lines);
+    // Desktop: delega ao Python (save_file salva na pasta do .exe)
+    pywebview.api.save_file(filename, txt);
+    // feedback vai chegar via onSaveResult()
   } else {
-    // Mobile/browser: baixa como arquivo de texto
+    // Modo remoto / browser: força download
     try {
-      const blob = new Blob([lines], { type:'text/plain;charset=utf-8' });
+      const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href = url; a.download = filename;
-      document.body.appendChild(a); a.click();
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      _flashBtn('btnSave', true);
-    } catch(e) { _flashBtn('btnSave', false); }
+      flashBtn('btnSave', true);
+      showToast('✔ Arquivo salvo: ' + filename, true);
+    } catch(e) {
+      flashBtn('btnSave', false);
+      showToast('✘ Erro ao salvar', false);
+    }
   }
 }
 
+// ─── RESETAR ──────────────────────────────────────
 function doReset() {
+  // Avisa o Python para zerar os contadores de memória
   if (window.pywebview) {
-    pywebview.api.reset_damage();
+    try { pywebview.api.reset_damage(); } catch(e) {}
   }
-  // Zera snapshot local
+
+  // Zera estado local
   _snapshot = null;
-  document.getElementById('bdgPlayers').textContent  = '0';
-  document.getElementById('bdgRanking').textContent  = '—';
-  document.getElementById('bdgMinions').textContent  = '0/0';
-  document.getElementById('bdgBuffs').textContent    = '0';
-  ['innerPlayers','rankList','innerMinions','innerBuffs'].forEach(id => {
+
+  // Limpa badges
+  document.getElementById('bdgPlayers').textContent = '0';
+  document.getElementById('bdgRanking').textContent = '—';
+  document.getElementById('bdgMinions').textContent = '0/0';
+  document.getElementById('bdgBuffs').textContent   = '0';
+
+  // Limpa conteúdo dos drawers
+  const EMPTY = '<div class="empty-state">Resetado · aguardando dados...</div>';
+  ['innerPlayers', 'rankList', 'innerMinions', 'innerBuffs'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = '<div class="empty-state">Resetado — aguardando dados...</div>';
+    if (el) el.innerHTML = EMPTY;
   });
-  _flashBtn('btnReset', true);
+
+  flashBtn('btnReset', true);
+  showToast('🗑 Contadores zerados', true);
 }
 
+// ─── Callback do Python após save_file ────────────
 function onSaveResult(ok, msg) {
-  _flashBtn('btnSave', ok);
+  flashBtn('btnSave', ok);
+  showToast(ok ? ('✔ Salvo: ' + msg) : ('✘ Erro: ' + msg), ok);
 }
 
 // ═══════════════════════════════════════════════════
