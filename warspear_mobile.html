@@ -1186,12 +1186,18 @@ function renderMinions(snap) {
 // BUFFS
 // ═══════════════════════════════════════════════════
 function renderBuffs(snap) {
-  const players = getFilteredPlayers(snap);
+  // snap.buffs vem do Python com {name, class_id, class_name, guild, faccao, buff_count, has_fero, has_resi}
+  const allBuffs = snap.buffs || [];
   const el = document.getElementById('innerBuffs');
 
-  const withBuffs = players
-    .filter(p => (p.buff_count || (p.buffs && p.buffs.length)) > 0)
-    .map(p => ({ ...p, _bc: p.buff_count || (p.buffs?.length || 0) }))
+  // Filtra por guilda se necessário
+  const buffPlayers = _guild === 'ALL'
+    ? allBuffs
+    : allBuffs.filter(p => p.guild === _guild);
+
+  const withBuffs = buffPlayers
+    .filter(p => (p.buff_count || 0) > 0)
+    .map(p => ({ ...p, _bc: p.buff_count || 0 }))
     .sort((a,b) => b._bc - a._bc);
 
   const totalBuffs = withBuffs.reduce((s,p) => s + p._bc, 0);
@@ -1206,25 +1212,33 @@ function renderBuffs(snap) {
   const least  = withBuffs[withBuffs.length - 1];
   const maxVal = most._bc || 1;
 
+  // Badges fero/resi para spotlight
+  const mostFero  = most.has_fero  ? '<span class="buff-badge bb-fero">FERO</span>' : '';
+  const mostResi  = most.has_resi  ? '<span class="buff-badge bb-resi">RESI</span>' : '';
+  const leastFero = least.has_fero ? '<span class="buff-badge bb-fero">FERO</span>' : '';
+  const leastResi = least.has_resi ? '<span class="buff-badge bb-resi">RESI</span>' : '';
+
   let html = `<div class="buff-spotlight">
     <div class="buff-spot bs-most">
       <div class="bs-label">▲ MAIS BUFFS</div>
       <div class="bs-name">${most.name}</div>
       <div class="bs-cls">${CLASS_ICON[most.class_id]||'?'} · ${most.class_name||''}</div>
       <div class="bs-num">${most._bc}</div>
+      <div style="margin-top:4px;display:flex;gap:3px">${mostFero}${mostResi}</div>
     </div>
     <div class="buff-spot bs-least">
       <div class="bs-label">▼ MENOS BUFFS</div>
       <div class="bs-name">${least.name}</div>
       <div class="bs-cls">${CLASS_ICON[least.class_id]||'?'} · ${least.class_name||''}</div>
       <div class="bs-num">${least._bc}</div>
+      <div style="margin-top:4px;display:flex;gap:3px">${leastFero}${leastResi}</div>
     </div>
   </div>`;
 
   withBuffs.forEach(p => {
     const pct = Math.round(p._bc / maxVal * 100);
-    const hasFero = p.buffs?.some(b => /fero|ferocidade/i.test(b.name||b));
-    const hasResi = p.buffs?.some(b => /resi|resistencia/i.test(b.name||b));
+    const hasFero = p.has_fero || false;
+    const hasResi = p.has_resi || false;
     const fc = (p.faccao===FAC_SENT||CLASS_SENT.includes(p.class_id)) ? 'col-sent' : 'col-legion';
     const feroTag = hasFero ? '<span class="buff-badge bb-fero">FERO</span>' : '';
     const resiTag = hasResi ? '<span class="buff-badge bb-resi">RESI</span>' : '';
