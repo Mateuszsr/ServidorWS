@@ -456,7 +456,72 @@ body {
 .bb-fero { background:rgba(255,153,68,.2); color:var(--buff-fero); border:1px solid var(--buff-fero); }
 .bb-resi { background:rgba(68,170,255,.2); color:var(--buff-resi); border:1px solid var(--buff-resi); }
 
-/* ═══ EMPTY STATE ═══ */
+/* ═══ FORA DA ÁREA SECTION ═══ */
+.drawer-absence  { --drawer-accent: var(--accent2); }
+.drawer-absence  .drawer-icon { background:rgba(224,48,80,.08); border-color:rgba(224,48,80,.3); color:var(--accent2); }
+.drawer-absence  .drawer-title { color:var(--accent2); }
+.drawer-absence  .drawer-badge { color:var(--accent2); }
+
+.absence-overview {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:12px;
+}
+.absence-ov-card {
+  border-radius:8px;
+  padding:10px 12px;
+  position:relative;
+  overflow:hidden;
+}
+.absence-ov-card::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; }
+.aov-online  { background:rgba(0,229,160,.06); border:1px solid rgba(0,229,160,.3); }
+.aov-online::before  { background:var(--sent); }
+.aov-offline { background:rgba(224,48,80,.06); border:1px solid rgba(224,48,80,.3); }
+.aov-offline::before { background:var(--accent2); }
+.aov-label { font-size:9px; font-family:'Share Tech Mono',monospace; color:var(--text-mid); letter-spacing:1px; }
+.aov-count { font-family:'Orbitron',sans-serif; font-size:26px; font-weight:900; margin-top:2px; line-height:1; }
+.aov-online  .aov-count { color:var(--sent); }
+.aov-offline .aov-count { color:var(--accent2); }
+
+.absence-list {
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.abs-member-row {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:6px;
+  background:var(--bg-hover);
+  border:1px solid var(--border2);
+}
+.abs-dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.abs-dot.online  { background:var(--sent); box-shadow:0 0 5px var(--sent); }
+.abs-dot.offline { background:var(--accent2); opacity:.7; }
+.abs-name {
+  flex:1;
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.abs-name.online  { color:var(--sent); }
+.abs-name.offline { color:var(--text-mid); }
+.abs-tag {
+  font-family:'Share Tech Mono',monospace;
+  font-size:8px;
+  padding:2px 6px;
+  border-radius:4px;
+  flex-shrink:0;
+}
+.abs-tag.online  { background:rgba(0,229,160,.15); color:var(--sent); border:1px solid rgba(0,229,160,.4); }
+.abs-tag.offline { background:rgba(224,48,80,.12); color:var(--accent2); border:1px solid rgba(224,48,80,.3); }
 .empty-state {
   padding:20px; text-align:center;
   color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:10px;
@@ -676,6 +741,24 @@ body {
     </div>
   </div>
 
+  <!-- ── FORA DA ÁREA ── -->
+  <div class="drawer-card drawer-absence" id="drawAbsence">
+    <div class="drawer-trigger" onclick="toggleDrawer('drawAbsence')">
+      <div class="drawer-icon">🚫</div>
+      <div class="drawer-title-wrap">
+        <div class="drawer-title">FORA DA ÁREA</div>
+        <div class="drawer-subtitle">Membros online e offline no mapa</div>
+      </div>
+      <div class="drawer-badge" id="bdgAbsence">—</div>
+      <div class="drawer-arrow">▼</div>
+    </div>
+    <div class="drawer-body" id="bodyAbsence">
+      <div class="drawer-inner" id="innerAbsence">
+        <div class="empty-state">Aguardando dados...</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /scroll-area -->
 
 <!-- Status banner -->
@@ -874,6 +957,7 @@ function renderAll(snap) {
   renderRanking(snap);
   renderMinions(snap);
   renderBuffs(snap);
+  renderAbsence(snap);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1160,7 +1244,54 @@ function renderBuffs(snap) {
 }
 
 // ═══════════════════════════════════════════════════
-// UTILS
+// FORA DA ÁREA
+// ═══════════════════════════════════════════════════
+function renderAbsence(snap) {
+  const el = document.getElementById('innerAbsence');
+  const presence = snap.guild_presence || [];
+
+  if (!presence.length) {
+    document.getElementById('bdgAbsence').textContent = '—';
+    el.innerHTML = '<div class="empty-state">Lista de membros não carregada · coloque fire_members.txt na pasta do app</div>';
+    return;
+  }
+
+  const online  = presence.filter(p => p.online);
+  const offline = presence.filter(p => !p.online);
+
+  // Badge mostra quantos estão fora
+  document.getElementById('bdgAbsence').textContent = offline.length + ' fora';
+
+  let html = `<div class="absence-overview">
+    <div class="absence-ov-card aov-online">
+      <div class="aov-label">✔ NA ÁREA</div>
+      <div class="aov-count">${online.length}</div>
+    </div>
+    <div class="absence-ov-card aov-offline">
+      <div class="aov-label">✘ FORA / OFFLINE</div>
+      <div class="aov-count">${offline.length}</div>
+    </div>
+  </div>`;
+
+  // Offline primeiro (os que faltam), depois online
+  const sorted = [...offline, ...online];
+
+  html += '<div class="absence-list">';
+  sorted.forEach(p => {
+    const cls = p.online ? 'online' : 'offline';
+    const tag = p.online ? 'NA ÁREA' : 'FORA';
+    html += `<div class="abs-member-row">
+      <span class="abs-dot ${cls}"></span>
+      <span class="abs-name ${cls}">${p.name}</span>
+      <span class="abs-tag ${cls}">${tag}</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════
 function fmtNum(n) {
   if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
@@ -1300,10 +1431,11 @@ function doReset() {
   document.getElementById('bdgRanking').textContent = '—';
   document.getElementById('bdgMinions').textContent = '0/0';
   document.getElementById('bdgBuffs').textContent   = '0';
+  document.getElementById('bdgAbsence').textContent = '—';
 
   // Limpa conteúdo dos drawers
   const EMPTY = '<div class="empty-state">Resetado · aguardando dados...</div>';
-  ['innerPlayers', 'rankList', 'innerMinions', 'innerBuffs'].forEach(id => {
+  ['innerPlayers', 'rankList', 'innerMinions', 'innerBuffs', 'innerAbsence'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = EMPTY;
   });
