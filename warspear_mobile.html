@@ -361,7 +361,19 @@ body {
 .rr-sub  { font-size:10px; color:var(--text-mid); font-family:'Share Tech Mono',monospace; margin-top:1px; }
 .rr-val  { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; text-align:right; flex-shrink:0; }
 
-/* ═══ MINIONS SECTION ═══ */
+.rank-more-sep {
+  text-align:center;
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;
+  color:var(--text-dim);
+  letter-spacing:2px;
+  padding:5px 0 4px;
+  border-top:1px dashed var(--border2);
+  border-bottom:1px dashed var(--border2);
+  margin:2px 0;
+}
+.rank-scroll-wrap::-webkit-scrollbar { width:3px; }
+.rank-scroll-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 .minion-split {
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -678,6 +690,10 @@ let _guild    = 'FIRE';
 let _rankMode = 'dmg';
 const PRIORITY_GUILD = 'FIRE';
 
+// Acumulador persistente de ranking — não é zerado ao trocar de mapa
+// Estrutura: { [playerName]: { damage_dealt, damage_taken, crit_damage, heal_done, ...meta } }
+let _rankData = {};
+
 const CLASS_ICON = {
   1:'PAL', 2:'SAC', 3:'MAG', 4:'BRB', 5:'RGU', 6:'SHA',
   7:'BLD', 8:'RNG', 9:'DRD', 10:'DK', 11:'NEC', 12:'WRL',
@@ -806,6 +822,26 @@ function onPythonPush(snap) {
   }
 
   _snapshot = snap;
+
+  // ── Acumula dados de ranking (nunca apaga ao trocar de mapa) ──
+  const incomingPlayers = getAllPlayers(snap);
+  incomingPlayers.forEach(p => {
+    if (!p.name) return;
+    const prev = _rankData[p.name] || {};
+    _rankData[p.name] = {
+      // mantém meta sempre atualizada
+      name:         p.name,
+      class_id:     p.class_id  || prev.class_id,
+      class_name:   p.class_name|| prev.class_name,
+      guild:        p.guild     || prev.guild,
+      faccao:       p.faccao    || prev.faccao,
+      // acumula o maior valor visto (pega o max para não perder progresso)
+      damage_dealt: Math.max(p.damage_dealt || 0, prev.damage_dealt || 0),
+      damage_taken: Math.max(p.damage_taken || 0, prev.damage_taken || 0),
+      crit_damage:  Math.max(p.crit_damage  || 0, prev.crit_damage  || 0),
+      heal_done:    Math.max(p.heal_done    || 0, prev.heal_done    || 0),
+    };
+  });
 
   // Build guild list from players
   const allPlayers = getAllPlayers(snap);
@@ -939,8 +975,13 @@ function switchRank(mode) {
 }
 
 function renderRanking(snap) {
-  const players = getFilteredPlayers(snap);
   const el = document.getElementById('rankList');
+
+  // Usa os dados acumulados persistentes, filtrados por guilda
+  let players = Object.values(_rankData);
+  if (_guild !== 'ALL') {
+    players = players.filter(p => p.guild === _guild);
+  }
 
   if (!players.length) { el.innerHTML = '<div class="empty-state">Sem dados</div>'; return; }
 
@@ -949,15 +990,16 @@ function renderRanking(snap) {
 
   const sorted = [...players]
     .filter(p => (p[field] || 0) > 0)
-    .sort((a,b) => (b[field]||0) - (a[field]||0))
-    .slice(0, 20);
+    .sort((a,b) => (b[field]||0) - (a[field]||0));
 
   if (!sorted.length) { el.innerHTML = '<div class="empty-state">Sem dados para este modo</div>'; return; }
 
   document.getElementById('bdgRanking').textContent = label;
 
   const max = sorted[0][field] || 1;
+  const TOP = 10;
   let html = '';
+
   sorted.forEach((p, i) => {
     const val  = p[field] || 0;
     const pct  = Math.round(val / max * 100);
@@ -965,6 +1007,11 @@ function renderRanking(snap) {
     const posLabel = ['🥇','🥈','🥉'][i] || (i+1);
     const sub  = `${CLASS_ICON[p.class_id]||'?'} · ${p.class_name||''}${p.guild ? ' · '+p.guild : ''}`;
     const fClr = (p.faccao===FAC_SENT||CLASS_SENT.includes(p.class_id)) ? 'var(--sent)' : 'var(--legion)';
+
+    // Separador visual antes do 11º lugar
+    if (i === TOP) {
+      html += `<div class="rank-more-sep">▼ MAIS ${sorted.length - TOP}</div>`;
+    }
 
     html += `<div class="rank-row">
       <div class="rr-bar" style="width:${pct}%"></div>
@@ -977,7 +1024,12 @@ function renderRanking(snap) {
       <div class="rr-val col-gold">${fmtNum(val)}</div>
     </div>`;
   });
-  el.innerHTML = html;
+
+  // Wrapper com scroll após top 10
+  const ROW_H = 49; // altura aproximada de cada linha (px)
+  const visibleH = TOP * ROW_H;
+
+  el.innerHTML = `<div class="rank-scroll-wrap" style="max-height:${visibleH}px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;">${html}</div>`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1239,8 +1291,9 @@ function doReset() {
     try { pywebview.api.reset_damage(); } catch(e) {}
   }
 
-  // Zera estado local
+  // Zera estado local incluindo dados acumulados de ranking
   _snapshot = null;
+  _rankData  = {};
 
   // Limpa badges
   document.getElementById('bdgPlayers').textContent = '0';
