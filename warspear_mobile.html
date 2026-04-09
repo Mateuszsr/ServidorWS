@@ -912,7 +912,7 @@ function onPythonPush(snap) {
 
   _snapshot = snap;
 
-  // ── Acumula dados de ranking (nunca apaga ao trocar de mapa) ──
+  // ── Atualiza dados de ranking direto do snapshot (igual PVE) ──
   const incomingPlayers = getAllPlayers(snap);
   incomingPlayers.forEach(p => {
     if (!p.name) return;
@@ -920,15 +920,15 @@ function onPythonPush(snap) {
     _rankData[p.name] = {
       // mantém meta sempre atualizada
       name:         p.name,
-      class_id:     p.class_id  || prev.class_id,
-      class_name:   p.class_name|| prev.class_name,
-      guild:        p.guild     || prev.guild,
-      faccao:       p.faccao    || prev.faccao,
-      // acumula o maior valor visto (pega o max para não perder progresso)
-      damage_dealt: Math.max(p.damage_dealt || 0, prev.damage_dealt || 0),
-      damage_taken: Math.max(p.damage_taken || 0, prev.damage_taken || 0),
-      crit_damage:  Math.max(p.crit_damage  || 0, prev.crit_damage  || 0),
-      heal_done:    Math.max(p.heal_done    || 0, prev.heal_done    || 0),
+      class_id:     p.class_id   || prev.class_id,
+      class_name:   p.class_name || prev.class_name,
+      guild:        p.guild      || prev.guild,
+      faccao:       p.faccao     || prev.faccao,
+      // usa o valor atual do snapshot (reflete o estado real do Python)
+      damage_dealt: p.damage_dealt || 0,
+      damage_taken: p.damage_taken || 0,
+      crit_damage:  p.crit_damage  || 0,
+      heal_done:    p.heal_done    || 0,
     };
   });
 
