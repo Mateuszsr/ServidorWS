@@ -372,6 +372,12 @@ body {
   border-bottom:1px dashed var(--border2);
   margin:2px 0;
 }
+.rank-scroll-wrap {
+  max-height:490px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
 .rank-scroll-wrap::-webkit-scrollbar { width:3px; }
 .rank-scroll-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 .minion-split {
@@ -700,7 +706,7 @@ body {
           <div class="rank-stab"        id="rst_crit" onclick="switchRank('crit')">💥 CRÍTICO</div>
           <div class="rank-stab"        id="rst_heal" onclick="switchRank('heal')">💚 CURA</div>
         </div>
-        <div id="rankList"><div class="empty-state">Aguardando dados...</div></div>
+        <div id="rankList" class="rank-scroll-wrap"><div class="empty-state">Aguardando dados...</div></div>
       </div>
     </div>
   </div>
@@ -1109,11 +1115,10 @@ function renderRanking(snap) {
     </div>`;
   });
 
-  // Wrapper com scroll após top 10
-  const ROW_H = 49; // altura aproximada de cada linha (px)
-  const visibleH = TOP * ROW_H;
-
-  el.innerHTML = `<div class="rank-scroll-wrap" style="max-height:${visibleH}px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;">${html}</div>`;
+  // Preserva posição de scroll — só atualiza o conteúdo
+  const scrollTop = el.scrollTop;
+  el.innerHTML = html;
+  el.scrollTop = scrollTop;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1338,8 +1343,14 @@ function flashBtn(id, ok) {
 }
 
 // ─── Monta o TXT do ranking ───────────────────────
-function buildRankingTxt(snap) {
-  const players = getAllPlayers(snap);
+function buildRankingTxt() {
+  // Usa _rankData acumulado (todos os players vistos, não só os atuais no mapa)
+  // Filtra por guilda selecionada
+  let players = Object.values(_rankData);
+  if (_guild !== 'ALL') {
+    players = players.filter(p => p.guild === _guild);
+  }
+
   const ts = new Date();
   const pad = n => String(n).padStart(2, '0');
   const dateStr = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()} ${pad(ts.getHours())}:${pad(ts.getMinutes())}:${pad(ts.getSeconds())}`;
@@ -1347,7 +1358,7 @@ function buildRankingTxt(snap) {
   const SEP  = '='.repeat(62);
   const DASH = '─'.repeat(62);
 
-  function rankBlock(title, fieldKey) {
+  function rankBlock(fieldKey) {
     const sorted = [...players]
       .map(p => ({ name: p.name, cls: p.class_name || '?', val: p[fieldKey] || 0 }))
       .filter(p => p.val > 0)
@@ -1364,28 +1375,29 @@ function buildRankingTxt(snap) {
     }).join('\n') + '\n';
   }
 
+  const guildLabel = _guild === 'ALL' ? 'TODAS AS GUILDAS' : _guild;
   const lines = [
     SEP,
     `  ⚔  WARSPEAR ARINAR — RANKING COMPLETO`,
-    `  ${dateStr}`,
+    `  ${dateStr}  |  Guilda: ${guildLabel}  |  ${players.length} players`,
     SEP,
     '',
     DASH,
     '  ⚡  DANO TOTAL',
     DASH,
-    rankBlock('dmg', 'damage_dealt'),
+    rankBlock('damage_dealt'),
     DASH,
     '  💥  CRÍTICO MÁXIMO',
     DASH,
-    rankBlock('crit', 'crit_damage'),
+    rankBlock('crit_damage'),
     DASH,
     '  🛡  DANO RECEBIDO',
     DASH,
-    rankBlock('recv', 'damage_taken'),
+    rankBlock('damage_taken'),
     DASH,
     '  💚  CURA TOTAL',
     DASH,
-    rankBlock('heal', 'heal_done'),
+    rankBlock('heal_done'),
     SEP,
   ];
   return lines.join('\n');
@@ -1393,13 +1405,13 @@ function buildRankingTxt(snap) {
 
 // ─── SALVAR ───────────────────────────────────────
 function doSave() {
-  if (!_snapshot) {
+  if (!Object.keys(_rankData).length) {
     flashBtn('btnSave', false);
     showToast('⚠ Sem dados para salvar', false);
     return;
   }
 
-  const txt = buildRankingTxt(_snapshot);
+  const txt = buildRankingTxt();
   const ts  = new Date();
   const pad = n => String(n).padStart(2, '0');
   const filename = `ranking_${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())}_${pad(ts.getHours())}-${pad(ts.getMinutes())}-${pad(ts.getSeconds())}.txt`;
