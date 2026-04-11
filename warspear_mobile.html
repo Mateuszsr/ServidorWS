@@ -550,6 +550,138 @@ body {
 .col-guild  { color:var(--guild-col) !important; }
 .col-gold   { color:var(--gold) !important; }
 
+/* ═══ GUILD VS BAR ═══ */
+.guild-vs-bar {
+  display:flex;
+  align-items:stretch;
+  gap:0;
+  height:52px;
+  border-radius:10px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  margin-bottom:10px;
+  position:relative;
+  background:var(--bg-void);
+  flex-shrink:0;
+}
+.gvb-guild {
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  padding:0 14px;
+  gap:8px;
+  min-width:52px;
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
+  background:linear-gradient(90deg, rgba(167,139,250,.32), rgba(167,139,250,.14));
+  border-right:2px solid rgba(167,139,250,.7);
+}
+.gvb-guild.fire-guild {
+  background:linear-gradient(90deg, rgba(255,106,42,.35), rgba(255,106,42,.14));
+  border-right:2px solid rgba(255,106,42,.8);
+}
+.gvb-rest {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  padding:0 14px;
+  gap:8px;
+  overflow:hidden;
+  background:rgba(85,119,170,.06);
+}
+.gvb-num {
+  font-family:'Orbitron',sans-serif;
+  font-size:26px;
+  font-weight:900;
+  white-space:nowrap;
+  flex-shrink:0;
+  line-height:1;
+}
+.gvb-guild .gvb-num { color:#fff; text-shadow:0 0 12px rgba(255,255,255,.3); }
+.gvb-guild.fire-guild .gvb-num { color:#ffcf99; text-shadow:0 0 14px rgba(255,160,60,.5); }
+.gvb-rest .gvb-num { color:var(--text-mid); }
+.gvb-label {
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  flex-shrink:1;
+  min-width:0;
+  letter-spacing:.5px;
+}
+.gvb-guild .gvb-label { color:rgba(255,255,255,.55); }
+.gvb-rest .gvb-label { color:var(--text-dim); text-align:right; }
+.gvb-vs {
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Orbitron',sans-serif;
+  font-size:9px;
+  font-weight:900;
+  color:rgba(255,255,255,.22);
+  letter-spacing:2px;
+  pointer-events:none;
+  z-index:2;
+  background:var(--bg-void);
+  padding:2px 5px;
+  border-radius:4px;
+  border:1px solid var(--border2);
+}
+
+/* ═══ GUILD CLASS ITEMS — EXPANDABLE ═══ */
+.class-item {
+  cursor:pointer;
+  transition:background .15s;
+}
+.class-item:active { background:var(--bg-card); }
+.class-item.expanded {
+  border-radius:6px 6px 0 0;
+  border-bottom:none;
+}
+.class-players-list {
+  display:none;
+  background:var(--bg-void);
+  border:1px solid var(--border2);
+  border-top:none;
+  border-radius:0 0 6px 6px;
+  padding:4px 0;
+  margin-top:-2px;
+  margin-bottom:0;
+}
+.class-players-list.open { display:block; }
+.cp-row {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:5px 10px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.cp-row:last-child { border-bottom:none; }
+.cp-dot {
+  width:5px; height:5px; border-radius:50%; flex-shrink:0;
+  background:var(--text-mid);
+}
+.cp-name {
+  font-size:11px;
+  font-weight:600;
+  flex:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:var(--text);
+}
+.class-item .class-arrow {
+  font-size:8px;
+  color:var(--text-dim);
+  transition:transform .2s;
+  flex-shrink:0;
+  margin-left:2px;
+}
+.class-item.expanded .class-arrow { transform:rotate(180deg); }
+
 /* ═══ SECTION DIVIDER ═══ */
 .section-sep {
   font-family:'Orbitron',sans-serif;
@@ -668,6 +800,19 @@ body {
 
 <!-- SCROLL AREA -->
 <div class="scroll-area" id="scrollArea">
+
+  <!-- ── GUILD VS BAR ── -->
+  <div id="guildVsBar" class="guild-vs-bar" style="display:none;">
+    <div class="gvb-guild" id="gvbGuild" style="width:50%">
+      <span class="gvb-num" id="gvbGuildNum">0</span>
+      <span class="gvb-label" id="gvbGuildLabel">GUILDA</span>
+    </div>
+    <span class="gvb-vs">VS</span>
+    <div class="gvb-rest" id="gvbRest">
+      <span class="gvb-label" id="gvbRestLabel">OUTROS</span>
+      <span class="gvb-num" id="gvbRestNum">0</span>
+    </div>
+  </div>
 
   <!-- ── PLAYERS ── -->
   <div class="drawer-card drawer-players" id="drawPlayers">
@@ -811,6 +956,7 @@ function toggleDrawer(id) {
 // ═══════════════════════════════════════════════════
 function selectGuild(g) {
   _guild = g;
+  _openClasses.clear();
   document.querySelectorAll('.guild-chip').forEach(c => {
     c.classList.toggle('active', c.dataset.guild === g);
   });
@@ -971,10 +1117,32 @@ function renderAll(snap) {
 // ═══════════════════════════════════════════════════
 function renderPlayers(snap) {
   const allPlayers = getAllPlayers(snap);
-  const filtered   = getFilteredPlayers(snap);
 
   // Badge: total no mapa
   document.getElementById('bdgPlayers').textContent = allPlayers.length;
+
+  // ── Guild VS Bar ──
+  const vsBar = document.getElementById('guildVsBar');
+  if (_guild !== 'ALL' && allPlayers.length) {
+    const gCount = allPlayers.filter(p => p.guild === _guild).length;
+    const rCount = allPlayers.length - gCount;
+    const total  = allPlayers.length || 1;
+    const gPct   = Math.max(12, Math.min(88, Math.round(gCount / total * 100)));
+
+    vsBar.style.display = 'flex';
+    const gvbEl = document.getElementById('gvbGuild');
+    // aplica cor de guilda (FIRE tem estilo especial, resto usa padrão)
+    if (_guild === 'FIRE') gvbEl.classList.add('fire-guild');
+    else gvbEl.classList.remove('fire-guild');
+
+    gvbEl.style.width = gPct + '%';
+    document.getElementById('gvbGuildNum').textContent   = gCount;
+    document.getElementById('gvbGuildLabel').textContent = _guild;
+    document.getElementById('gvbRestNum').textContent    = rCount;
+    document.getElementById('gvbRestLabel').textContent  = rCount === 1 ? '1 OUTRO' : rCount + ' OUTROS';
+  } else {
+    vsBar.style.display = 'none';
+  }
 
   const el = document.getElementById('innerPlayers');
   if (!allPlayers.length) { el.innerHTML = '<div class="empty-state">Sem players no mapa</div>'; return; }
@@ -982,33 +1150,22 @@ function renderPlayers(snap) {
   let html = '';
 
   if (_guild !== 'ALL') {
-    // Show guild count vs rest
+    // Vista de guilda: classes expandíveis com nomes dos players
     const guildPlayers = allPlayers.filter(p => p.guild === _guild);
-    const restPlayers  = allPlayers.filter(p => p.guild !== _guild);
-
-    html += '<div class="players-overview">';
-    html += `<div class="players-ov-card pov-guild">
-      <div class="pov-label">${_guild}</div>
-      <div class="pov-count">${guildPlayers.length}</div>
-    </div>`;
-    html += `<div class="players-ov-card pov-other">
-      <div class="pov-label">OUTROS</div>
-      <div class="pov-count">${restPlayers.length}</div>
-    </div>`;
-    html += '</div>';
-
-    // Classes apenas da guilda
     const bySent = guildPlayers.filter(p => p.faccao === FAC_SENT || CLASS_SENT.includes(p.class_id));
     const byLeg  = guildPlayers.filter(p => p.faccao === FAC_LEG  || CLASS_LEG.includes(p.class_id));
 
     if (bySent.length) {
-      html += factionClassBlock('⚔ SENTINELAS', bySent, 'col-sent');
+      html += guildClassBlock('⚔ SENTINELAS', bySent, 'col-sent', 'sent');
     }
     if (byLeg.length) {
-      html += factionClassBlock('💀 LEGIÃO', byLeg, 'col-legion');
+      html += guildClassBlock('💀 LEGIÃO', byLeg, 'col-legion', 'leg');
+    }
+    if (!guildPlayers.length) {
+      html = '<div class="empty-state">Nenhum membro da guilda ' + _guild + ' no mapa</div>';
     }
   } else {
-    // Show sent vs legion totals
+    // Vista TODAS: sentinelas vs legião com cards de contagem
     const sentPlayers = allPlayers.filter(p => p.faccao === FAC_SENT || CLASS_SENT.includes(p.class_id));
     const legPlayers  = allPlayers.filter(p => p.faccao === FAC_LEG  || CLASS_LEG.includes(p.class_id));
 
@@ -1028,6 +1185,45 @@ function renderPlayers(snap) {
   }
 
   el.innerHTML = html;
+  _restoreClassStates();
+}
+
+// ─── Bloco de classes com players expandíveis (modo guilda selecionada) ───
+function guildClassBlock(label, players, colorCls, facKey) {
+  if (!players.length) return '';
+
+  // Agrupa por classe
+  const counts = {};
+  players.forEach(p => {
+    const k = p.class_id;
+    if (!counts[k]) counts[k] = { id:k, name: p.class_name || CLASS_ICON[k] || '?', players:[] };
+    counts[k].players.push(p);
+  });
+  const sorted = Object.values(counts).sort((a,b) => b.players.length - a.players.length);
+
+  let html = `<div class="faction-label ${colorCls}">${label} (${players.length})</div>`;
+  html += '<div class="class-grid">';
+
+  sorted.forEach((c, idx) => {
+    const uid = `cpl_${facKey}_${c.id}`;
+    const playerRows = c.players
+      .sort((a,b) => a.name.localeCompare(b.name))
+      .map(p => `<div class="cp-row"><span class="cp-dot"></span><span class="cp-name">${p.name}</span></div>`)
+      .join('');
+
+    html += `<div style="display:flex;flex-direction:column;">
+      <div class="class-item" id="ci_${uid}" onclick="toggleClassPlayers('${uid}')">
+        <span class="class-em">${CLASS_ICON[c.id]||'?'}</span>
+        <span class="class-name">${c.name}</span>
+        <span class="class-cnt ${colorCls}">${c.players.length}</span>
+        <span class="class-arrow">▼</span>
+      </div>
+      <div class="class-players-list" id="cpl_${uid}">${playerRows}</div>
+    </div>`;
+  });
+
+  html += '</div>';
+  return html;
 }
 
 function factionClassBlock(label, players, colorCls) {
@@ -1051,6 +1247,31 @@ function factionClassBlock(label, players, colorCls) {
   });
   html += '</div>';
   return html;
+}
+
+// ─── Estado persistente dos painéis expandidos ────
+const _openClasses = new Set();
+
+function toggleClassPlayers(uid) {
+  if (_openClasses.has(uid)) {
+    _openClasses.delete(uid);
+  } else {
+    _openClasses.add(uid);
+  }
+  _applyClassState(uid);
+}
+
+function _applyClassState(uid) {
+  const item = document.getElementById('ci_' + uid);
+  const list = document.getElementById('cpl_' + uid);
+  if (!item || !list) return;
+  const open = _openClasses.has(uid);
+  item.classList.toggle('expanded', open);
+  list.classList.toggle('open', open);
+}
+
+function _restoreClassStates() {
+  _openClasses.forEach(uid => _applyClassState(uid));
 }
 
 // ═══════════════════════════════════════════════════
@@ -1451,6 +1672,7 @@ function doReset() {
   // Zera estado local incluindo dados acumulados de ranking
   _snapshot = null;
   _rankData  = {};
+  _openClasses.clear();
 
   // Limpa badges
   document.getElementById('bdgPlayers').textContent = '0';
@@ -1458,6 +1680,8 @@ function doReset() {
   document.getElementById('bdgMinions').textContent = '0/0';
   document.getElementById('bdgBuffs').textContent   = '0';
   document.getElementById('bdgAbsence').textContent = '—';
+  const vsBar = document.getElementById('guildVsBar');
+  if (vsBar) vsBar.style.display = 'none';
 
   // Limpa conteúdo dos drawers
   const EMPTY = '<div class="empty-state">Resetado · aguardando dados...</div>';
