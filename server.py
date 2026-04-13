@@ -391,7 +391,7 @@ def live():
 @app.route("/", methods=["GET"])
 def dashboard():
     """Serve o dashboard HTML."""
-    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "warspear_mobile.html")
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "arinar_pve_players")
     if not os.path.exists(html_path):
         return "Dashboard não encontrado.", 404
     return send_file(html_path, mimetype="text/html")
